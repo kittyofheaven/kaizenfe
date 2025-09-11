@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import Navigation from './Navigation'
+import Navigation from "./Navigation";
 
 interface LayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
@@ -14,5 +14,5 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </main>
     </div>
-  )
+  );
 }
