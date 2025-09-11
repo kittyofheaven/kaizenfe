@@ -29,10 +29,10 @@ export default function WashingMachinePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        console.log('🧺 Starting to fetch washing machine data...');
+        console.log("🧺 Starting to fetch washing machine data...");
         setLoading(true);
 
-        console.log('📡 Making API calls...');
+        console.log("📡 Making API calls...");
         const [
           womenBookingsRes,
           menBookingsRes,
@@ -45,17 +45,17 @@ export default function WashingMachinePage() {
           apiClient.getMenWashingMachineFacilities(),
         ]);
 
-        console.log('✅ Women bookings:', womenBookingsRes);
-        console.log('✅ Men bookings:', menBookingsRes);
-        console.log('✅ Women facilities:', womenFacilitiesRes);
-        console.log('✅ Men facilities:', menFacilitiesRes);
+        console.log("✅ Women bookings:", womenBookingsRes);
+        console.log("✅ Men bookings:", menBookingsRes);
+        console.log("✅ Women facilities:", womenFacilitiesRes);
+        console.log("✅ Men facilities:", menFacilitiesRes);
 
         setWomenBookings(womenBookingsRes.data);
         setMenBookings(menBookingsRes.data);
         setWomenFacilities(womenFacilitiesRes.data || []);
         setMenFacilities(menFacilitiesRes.data || []);
-        
-        console.log('🏁 Successfully loaded washing machine data');
+
+        console.log("🏁 Successfully loaded washing machine data");
       } catch (error) {
         console.error("❌ Error fetching washing machine data:", error);
       } finally {
@@ -94,36 +94,36 @@ export default function WashingMachinePage() {
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Washing Machine Bookings
+          <h1 className="text-4xl font-bold text-red mb-6 font-mono tracking-wider">
+            LAUNDRY CONTROL MATRIX
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Interactive floor plan for washing machine reservations
+          <p className="text-lg text-red font-mono tracking-wide opacity-75">
+            [ INTERACTIVE FACILITY MANAGEMENT SYSTEM ]
           </p>
         </div>
 
         {/* Tab Navigation */}
         <div className="flex justify-center">
-          <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+          <div className="bg-black border border-red p-2 flex">
             <button
               onClick={() => setActiveTab("women")}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-8 py-3 font-mono font-bold tracking-widest text-sm transition-all duration-300 ${
                 activeTab === "women"
-                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  ? "bg-red/20 text-red border border-red"
+                  : "text-red/60 hover:text-red hover:bg-red/10"
               }`}
             >
-              Women's Section
+              [ WOMEN'S SECTOR ]
             </button>
             <button
               onClick={() => setActiveTab("men")}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`px-8 py-3 font-mono font-bold tracking-widest text-sm transition-all duration-300 ${
                 activeTab === "men"
-                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                  ? "bg-red/20 text-red border border-red"
+                  : "text-red/60 hover:text-red hover:bg-red/10"
               }`}
             >
-              Men's Section
+              [ MEN'S SECTOR ]
             </button>
           </div>
         </div>
@@ -137,57 +137,60 @@ export default function WashingMachinePage() {
         />
 
         {/* Summary Stats */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Current Status Summary
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-pink-600">
-                {womenFacilities.length}
+        <div className="bg-black border border-red p-6 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-red/5 via-transparent to-red/3"></div>
+          <div className="relative z-10">
+            <h3 className="text-xl font-mono font-bold text-red mb-6 text-center">
+              [ SYSTEM STATUS OVERVIEW ]
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="text-center p-4 bg-red/10 border border-red opacity-75">
+                <div className="text-3xl font-mono font-bold text-red mb-2">
+                  {womenFacilities.length}
+                </div>
+                <div className="text-xs font-mono tracking-widest text-red">
+                  WOMEN'S UNITS
+                </div>
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Women's Machines
+              <div className="text-center p-4 bg-red/10 border border-red opacity-75">
+                <div className="text-3xl font-mono font-bold text-red mb-2">
+                  {menFacilities.length}
+                </div>
+                <div className="text-xs font-mono tracking-widest text-red">
+                  MEN'S UNITS
+                </div>
               </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {menFacilities.length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Men's Machines
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {womenBookings.filter(
-                  (b) => new Date(b.waktuBerakhir) > new Date()
-                ).length +
-                  menBookings.filter(
+              <div className="text-center p-4 bg-red/10 border border-red">
+                <div className="text-3xl font-mono font-bold text-red mb-2">
+                  {womenBookings.filter(
                     (b) => new Date(b.waktuBerakhir) > new Date()
-                  ).length}
+                  ).length +
+                    menBookings.filter(
+                      (b) => new Date(b.waktuBerakhir) > new Date()
+                    ).length}
+                </div>
+                <div className="text-xs font-mono tracking-widest text-red">
+                  ACTIVE SESSIONS
+                </div>
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Active Bookings
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {womenFacilities.length +
-                  menFacilities.length -
-                  womenBookings.filter(
-                    (b) =>
-                      new Date(b.waktuMulai) <= new Date() &&
-                      new Date(b.waktuBerakhir) > new Date()
-                  ).length -
-                  menBookings.filter(
-                    (b) =>
-                      new Date(b.waktuMulai) <= new Date() &&
-                      new Date(b.waktuBerakhir) > new Date()
-                  ).length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Available Now
+              <div className="text-center p-4 bg-red/10 border border-red opacity-50">
+                <div className="text-3xl font-mono font-bold text-red mb-2">
+                  {womenFacilities.length +
+                    menFacilities.length -
+                    womenBookings.filter(
+                      (b) =>
+                        new Date(b.waktuMulai) <= new Date() &&
+                        new Date(b.waktuBerakhir) > new Date()
+                    ).length -
+                    menBookings.filter(
+                      (b) =>
+                        new Date(b.waktuMulai) <= new Date() &&
+                        new Date(b.waktuBerakhir) > new Date()
+                    ).length}
+                </div>
+                <div className="text-xs font-mono tracking-widest text-red">
+                  AVAILABLE NOW
+                </div>
               </div>
             </div>
           </div>
