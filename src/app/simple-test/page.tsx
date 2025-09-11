@@ -9,9 +9,13 @@ export default function SimpleTestPage() {
     const testFetch = async () => {
       try {
         console.log('🧪 Starting simple fetch test...')
+        console.log('🌐 Current location:', window.location.href)
         
-        // Test direct fetch to API
-        const response = await fetch('http://localhost:3000/api/v1/users')
+        // Test with the proxy URL
+        const proxyUrl = '/api/v1/users'
+        console.log('📡 Testing proxy URL:', proxyUrl)
+        
+        const response = await fetch(proxyUrl)
         console.log('📡 Response status:', response.status)
         console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
         

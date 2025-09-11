@@ -23,7 +23,8 @@ import {
   TimeSlotParams,
 } from "@/types/api";
 
-const API_BASE_URL = "http://localhost:3000";
+// Use empty string for base URL to use Next.js proxy
+const API_BASE_URL = "";
 const API_VERSION = "/api/v1";
 
 class ApiError extends Error {
@@ -94,7 +95,7 @@ class ApiClient {
 
   // Health Check
   async getHealth(): Promise<HealthResponse> {
-    return this.request<HealthResponse>("/health");
+    return this.request<HealthResponse>("/api/health");
   }
 
   async getApiInfo(): Promise<ApiInfoResponse> {
