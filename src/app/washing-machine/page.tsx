@@ -1,54 +1,78 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import Layout from '@/components/Layout'
-import WashingMachineLayout from '@/components/WashingMachineLayout'
-import { apiClient } from '@/lib/api'
-import { WashingMachineBooking, WashingMachineFacility } from '@/types/api'
-import { Cog6ToothIcon, UserGroupIcon, CalendarIcon } from '@heroicons/react/24/outline'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import Layout from "@/components/Layout";
+import WashingMachineLayout from "@/components/WashingMachineLayout";
+import { apiClient } from "@/lib/api";
+import { WashingMachineBooking, WashingMachineFacility } from "@/types/api";
+import {
+  Cog6ToothIcon,
+  UserGroupIcon,
+  CalendarIcon,
+} from "@heroicons/react/24/outline";
 
 export default function WashingMachinePage() {
-  const [womenBookings, setWomenBookings] = useState<WashingMachineBooking[]>([])
-  const [menBookings, setMenBookings] = useState<WashingMachineBooking[]>([])
-  const [womenFacilities, setWomenFacilities] = useState<WashingMachineFacility[]>([])
-  const [menFacilities, setMenFacilities] = useState<WashingMachineFacility[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'women' | 'men'>('women')
+  const [womenBookings, setWomenBookings] = useState<WashingMachineBooking[]>(
+    []
+  );
+  const [menBookings, setMenBookings] = useState<WashingMachineBooking[]>([]);
+  const [womenFacilities, setWomenFacilities] = useState<
+    WashingMachineFacility[]
+  >([]);
+  const [menFacilities, setMenFacilities] = useState<WashingMachineFacility[]>(
+    []
+  );
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"women" | "men">("women");
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true)
-        
-        const [womenBookingsRes, menBookingsRes, womenFacilitiesRes, menFacilitiesRes] = await Promise.all([
+        console.log('🧺 Starting to fetch washing machine data...');
+        setLoading(true);
+
+        console.log('📡 Making API calls...');
+        const [
+          womenBookingsRes,
+          menBookingsRes,
+          womenFacilitiesRes,
+          menFacilitiesRes,
+        ] = await Promise.all([
           apiClient.getWomenWashingMachineBookings({ limit: 50 }),
           apiClient.getMenWashingMachineBookings({ limit: 50 }),
           apiClient.getWomenWashingMachineFacilities(),
           apiClient.getMenWashingMachineFacilities(),
-        ])
+        ]);
 
-        setWomenBookings(womenBookingsRes.data)
-        setMenBookings(menBookingsRes.data)
-        setWomenFacilities(womenFacilitiesRes.data || [])
-        setMenFacilities(menFacilitiesRes.data || [])
+        console.log('✅ Women bookings:', womenBookingsRes);
+        console.log('✅ Men bookings:', menBookingsRes);
+        console.log('✅ Women facilities:', womenFacilitiesRes);
+        console.log('✅ Men facilities:', menFacilitiesRes);
+
+        setWomenBookings(womenBookingsRes.data);
+        setMenBookings(menBookingsRes.data);
+        setWomenFacilities(womenFacilitiesRes.data || []);
+        setMenFacilities(menFacilitiesRes.data || []);
+        
+        console.log('🏁 Successfully loaded washing machine data');
       } catch (error) {
-        console.error('Error fetching washing machine data:', error)
+        console.error("❌ Error fetching washing machine data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return {
       date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  }
+      time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+  };
 
   if (loading) {
     return (
@@ -57,13 +81,13 @@ export default function WashingMachinePage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       </Layout>
-    )
+    );
   }
 
   const handleMachineClick = (facility: WashingMachineFacility) => {
-    console.log('Selected machine:', facility)
+    console.log("Selected machine:", facility);
     // TODO: Open booking modal
-  }
+  };
 
   return (
     <Layout>
@@ -82,21 +106,21 @@ export default function WashingMachinePage() {
         <div className="flex justify-center">
           <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
             <button
-              onClick={() => setActiveTab('women')}
+              onClick={() => setActiveTab("women")}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'women'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                activeTab === "women"
+                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
               Women's Section
             </button>
             <button
-              onClick={() => setActiveTab('men')}
+              onClick={() => setActiveTab("men")}
               className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'men'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                activeTab === "men"
+                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
               Men's Section
@@ -106,8 +130,8 @@ export default function WashingMachinePage() {
 
         {/* Machine Layout */}
         <WashingMachineLayout
-          facilities={activeTab === 'women' ? womenFacilities : menFacilities}
-          bookings={activeTab === 'women' ? womenBookings : menBookings}
+          facilities={activeTab === "women" ? womenFacilities : menFacilities}
+          bookings={activeTab === "women" ? womenBookings : menBookings}
           type={activeTab}
           onMachineClick={handleMachineClick}
         />
@@ -136,8 +160,12 @@ export default function WashingMachinePage() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {womenBookings.filter(b => new Date(b.waktuBerakhir) > new Date()).length + 
-                 menBookings.filter(b => new Date(b.waktuBerakhir) > new Date()).length}
+                {womenBookings.filter(
+                  (b) => new Date(b.waktuBerakhir) > new Date()
+                ).length +
+                  menBookings.filter(
+                    (b) => new Date(b.waktuBerakhir) > new Date()
+                  ).length}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 Active Bookings
@@ -145,9 +173,18 @@ export default function WashingMachinePage() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                {womenFacilities.length + menFacilities.length - 
-                 womenBookings.filter(b => new Date(b.waktuMulai) <= new Date() && new Date(b.waktuBerakhir) > new Date()).length -
-                 menBookings.filter(b => new Date(b.waktuMulai) <= new Date() && new Date(b.waktuBerakhir) > new Date()).length}
+                {womenFacilities.length +
+                  menFacilities.length -
+                  womenBookings.filter(
+                    (b) =>
+                      new Date(b.waktuMulai) <= new Date() &&
+                      new Date(b.waktuBerakhir) > new Date()
+                  ).length -
+                  menBookings.filter(
+                    (b) =>
+                      new Date(b.waktuMulai) <= new Date() &&
+                      new Date(b.waktuBerakhir) > new Date()
+                  ).length}
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 Available Now
@@ -161,8 +198,9 @@ export default function WashingMachinePage() {
           <div className="text-center">
             <h3 className="text-2xl font-bold mb-4">Need to do laundry?</h3>
             <p className="text-purple-100 mb-6 max-w-2xl mx-auto">
-              Click on any machine in the layout above to see its status and book a slot. 
-              Our interactive system prevents conflicts and helps you plan your laundry schedule.
+              Click on any machine in the layout above to see its status and
+              book a slot. Our interactive system prevents conflicts and helps
+              you plan your laundry schedule.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -171,10 +209,10 @@ export default function WashingMachinePage() {
               >
                 Manage Users
               </Link>
-              <button 
+              <button
                 onClick={() => {
                   // Scroll to the layout
-                  window.scrollTo({ top: 300, behavior: 'smooth' })
+                  window.scrollTo({ top: 300, behavior: "smooth" });
                 }}
                 className="bg-purple-600 border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
               >
@@ -185,5 +223,5 @@ export default function WashingMachinePage() {
         </div>
       </div>
     </Layout>
-  )
+  );
 }

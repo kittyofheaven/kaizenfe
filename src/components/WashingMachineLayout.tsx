@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { WashingMachineFacility, WashingMachineBooking } from "@/types/api";
-import { 
-  Cog6ToothIcon, 
-  ClockIcon, 
+import {
+  Cog6ToothIcon,
+  ClockIcon,
   UserIcon,
   CheckCircleIcon,
-  XCircleIcon 
+  XCircleIcon,
 } from "@heroicons/react/24/outline";
 
 interface WashingMachineLayoutProps {
@@ -145,7 +145,11 @@ export default function WashingMachineLayout({
               className={`
                 relative p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 transform hover:scale-105
                 ${getMachineColor(machine.status)}
-                ${selectedMachine === machine.id ? "ring-2 ring-blue-500 ring-offset-2" : ""}
+                ${
+                  selectedMachine === machine.id
+                    ? "ring-2 ring-blue-500 ring-offset-2"
+                    : ""
+                }
               `}
               onClick={() => handleMachineClick(machine)}
             >
@@ -157,7 +161,7 @@ export default function WashingMachineLayout({
                     {getStatusIcon(machine.status)}
                   </div>
                 </div>
-                
+
                 {/* Machine Number */}
                 <div className="text-center">
                   <div className="text-xs font-semibold text-gray-900 dark:text-white">
@@ -185,7 +189,8 @@ export default function WashingMachineLayout({
             {type === "women" ? "Women's" : "Men's"} Laundry Room
           </h4>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {machineStatuses.filter(m => m.status === "available").length} of {machineStatuses.length} machines available
+            {machineStatuses.filter((m) => m.status === "available").length} of{" "}
+            {machineStatuses.length} machines available
           </p>
         </div>
       </div>
@@ -194,7 +199,9 @@ export default function WashingMachineLayout({
       {selectedMachine && (
         <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
           {(() => {
-            const machine = machineStatuses.find(m => m.id === selectedMachine);
+            const machine = machineStatuses.find(
+              (m) => m.id === selectedMachine
+            );
             if (!machine) return null;
 
             return (
@@ -203,14 +210,17 @@ export default function WashingMachineLayout({
                   <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                     {machine.name}
                   </h4>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    machine.status === "available" 
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                      : machine.status === "occupied"
-                      ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
-                  }`}>
-                    {machine.status.charAt(0).toUpperCase() + machine.status.slice(1)}
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      machine.status === "available"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                        : machine.status === "occupied"
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+                    }`}
+                  >
+                    {machine.status.charAt(0).toUpperCase() +
+                      machine.status.slice(1)}
                   </span>
                 </div>
 
@@ -223,8 +233,14 @@ export default function WashingMachineLayout({
                       </span>
                     </div>
                     <div className="text-sm text-red-700 dark:text-red-300">
-                      <p><strong>User:</strong> {machine.currentBooking.peminjam.namaLengkap}</p>
-                      <p><strong>Until:</strong> {formatTime(machine.currentBooking.waktuBerakhir)}</p>
+                      <p>
+                        <strong>User:</strong>{" "}
+                        {machine.currentBooking.peminjam.namaLengkap}
+                      </p>
+                      <p>
+                        <strong>Until:</strong>{" "}
+                        {formatTime(machine.currentBooking.waktuBerakhir)}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -238,8 +254,15 @@ export default function WashingMachineLayout({
                       </span>
                     </div>
                     <div className="text-sm text-blue-700 dark:text-blue-300">
-                      <p><strong>User:</strong> {machine.nextBooking.peminjam.namaLengkap}</p>
-                      <p><strong>Time:</strong> {formatTime(machine.nextBooking.waktuMulai)} - {formatTime(machine.nextBooking.waktuBerakhir)}</p>
+                      <p>
+                        <strong>User:</strong>{" "}
+                        {machine.nextBooking.peminjam.namaLengkap}
+                      </p>
+                      <p>
+                        <strong>Time:</strong>{" "}
+                        {formatTime(machine.nextBooking.waktuMulai)} -{" "}
+                        {formatTime(machine.nextBooking.waktuBerakhir)}
+                      </p>
                     </div>
                   </div>
                 )}

@@ -70,19 +70,37 @@ export default function Home() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch basic stats
-        const usersResponse = await apiClient.getUsers()
-        const communalResponse = await apiClient.getCommunalBookings()
+        console.log('🚀 Starting to fetch dashboard stats...')
         
-        setStats({
-          totalUsers: usersResponse.pagination.total,
-          totalBookings: communalResponse.pagination.total,
+        // Fetch basic stats
+        console.log('📊 Fetching users...')
+        const usersResponse = await apiClient.getUsers()
+        console.log('✅ Users response:', usersResponse)
+        
+        console.log('🏢 Fetching communal bookings...')
+        const communalResponse = await apiClient.getCommunalBookings()
+        console.log('✅ Communal response:', communalResponse)
+        
+        const newStats = {
+          totalUsers: usersResponse.pagination?.total || 0,
+          totalBookings: communalResponse.pagination?.total || 0,
           todayBookings: 0, // Would need to filter by today
           availableSlots: 16, // Default slots per day
-        })
+        }
+        
+        console.log('📈 Setting stats:', newStats)
+        setStats(newStats)
       } catch (error) {
-        console.error('Error fetching stats:', error)
+        console.error('❌ Error fetching stats:', error)
+        // Set some default values even on error
+        setStats({
+          totalUsers: 0,
+          totalBookings: 0,
+          todayBookings: 0,
+          availableSlots: 0,
+        })
       } finally {
+        console.log('🏁 Finished loading stats')
         setLoading(false)
       }
     }
