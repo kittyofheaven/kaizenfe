@@ -1,18 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import Layout from "@/components/Layout";
-import WashingMachineLayout from "@/components/WashingMachineLayout";
+import WashingMachineCard from "@/components/WashingMachineCard";
+import NewWashingMachineBookingModal from "@/components/NewWashingMachineBookingModal";
+import BookingCalendar from "@/components/BookingCalendar";
 import { apiClient } from "@/lib/api";
 import { WashingMachineBooking, WashingMachineFacility } from "@/types/api";
-import {
-  Cog6ToothIcon,
-  UserGroupIcon,
-  CalendarIcon,
-} from "@heroicons/react/24/outline";
 
 export default function WashingMachinePage() {
+  const [activeTab, setActiveTab] = useState<"women" | "men">("women");
   const [womenBookings, setWomenBookings] = useState<WashingMachineBooking[]>(
     []
   );
@@ -24,7 +21,9 @@ export default function WashingMachinePage() {
     []
   );
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"women" | "men">("women");
+  const [selectedFacility, setSelectedFacility] =
+    useState<WashingMachineFacility | null>(null);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,12 +65,41 @@ export default function WashingMachinePage() {
     fetchData();
   }, []);
 
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
+  const handleMachineClick = (facility: WashingMachineFacility) => {
+    console.log("Selected machine:", facility);
+    setSelectedFacility(facility);
+    // View details functionality can be added here
+  };
+
+  const handleBookNow = (facility: WashingMachineFacility) => {
+    console.log("Booking machine:", facility);
+    setSelectedFacility(facility);
+    setIsBookingModalOpen(true);
+  };
+
+  const handleBookingSuccess = async () => {
+    console.log("🎉 Booking successful! Refreshing data...");
+    // Refresh the data after successful booking
+    try {
+      const [
+        womenBookingsRes,
+        menBookingsRes,
+        womenFacilitiesRes,
+        menFacilitiesRes,
+      ] = await Promise.all([
+        apiClient.getWomenWashingMachineBookings({ limit: 50 }),
+        apiClient.getMenWashingMachineBookings({ limit: 50 }),
+        apiClient.getWomenWashingMachineFacilities(),
+        apiClient.getMenWashingMachineFacilities(),
+      ]);
+
+      setWomenBookings(womenBookingsRes.data);
+      setMenBookings(menBookingsRes.data);
+      setWomenFacilities(womenFacilitiesRes.data || []);
+      setMenFacilities(menFacilitiesRes.data || []);
+    } catch (error) {
+      console.error("❌ Error refreshing data:", error);
+    }
   };
 
   if (loading) {
@@ -84,146 +112,135 @@ export default function WashingMachinePage() {
     );
   }
 
-  const handleMachineClick = (facility: WashingMachineFacility) => {
-    console.log("Selected machine:", facility);
-    // TODO: Open booking modal
-  };
-
   return (
     <Layout>
       <div className="space-y-8">
         {/* Header */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-red mb-6 font-mono tracking-wider">
-            LAUNDRY CONTROL MATRIX
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
+            Washing Machine Booking
           </h1>
-          <p className="text-lg text-red font-mono tracking-wide opacity-75">
-            [ INTERACTIVE FACILITY MANAGEMENT SYSTEM ]
+          <p className="text-lg text-muted-foreground">
+            Book your preferred washing machine slot
           </p>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex justify-center">
-          <div className="bg-black border border-red p-2 flex">
+        <div className="flex justify-center mb-8">
+          <div className="bg-secondary rounded-lg p-1 flex">
             <button
               onClick={() => setActiveTab("women")}
-              className={`px-8 py-3 font-mono font-bold tracking-widest text-sm transition-all duration-300 ${
+              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
                 activeTab === "women"
-                  ? "bg-red/20 text-red border border-red"
-                  : "text-red/60 hover:text-red hover:bg-red/10"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              [ WOMEN'S SECTOR ]
+              Women's Section
             </button>
             <button
               onClick={() => setActiveTab("men")}
-              className={`px-8 py-3 font-mono font-bold tracking-widest text-sm transition-all duration-300 ${
+              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
                 activeTab === "men"
-                  ? "bg-red/20 text-red border border-red"
-                  : "text-red/60 hover:text-red hover:bg-red/10"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              [ MEN'S SECTOR ]
+              Men's Section
             </button>
           </div>
         </div>
 
-        {/* Machine Layout */}
-        <WashingMachineLayout
-          facilities={activeTab === "women" ? womenFacilities : menFacilities}
-          bookings={activeTab === "women" ? womenBookings : menBookings}
-          type={activeTab}
-          onMachineClick={handleMachineClick}
-        />
+        {/* Machine Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {(activeTab === "women" ? womenFacilities : menFacilities).map(
+            (facility) => (
+              <WashingMachineCard
+                key={facility.id}
+                facility={facility}
+                bookings={activeTab === "women" ? womenBookings : menBookings}
+                onClick={() => handleMachineClick(facility)}
+                onBookNow={() => handleBookNow(facility)}
+              />
+            )
+          )}
+        </div>
+
+        {/* Booking Calendar for Active Tab */}
+        <div className="mt-8">
+          <BookingCalendar
+            type={activeTab}
+            title={`${
+              activeTab === "women" ? "Women's" : "Men's"
+            } Washing Machine`}
+          />
+        </div>
 
         {/* Summary Stats */}
-        <div className="bg-black border border-red p-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-red/5 via-transparent to-red/3"></div>
-          <div className="relative z-10">
-            <h3 className="text-xl font-mono font-bold text-red mb-6 text-center">
-              [ SYSTEM STATUS OVERVIEW ]
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center p-4 bg-red/10 border border-red opacity-75">
-                <div className="text-3xl font-mono font-bold text-red mb-2">
-                  {womenFacilities.length}
-                </div>
-                <div className="text-xs font-mono tracking-widest text-red">
-                  WOMEN'S UNITS
-                </div>
+        <div className="card p-6">
+          <h3 className="text-xl font-semibold text-foreground mb-6 text-center">
+            Overview
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center p-4 bg-secondary rounded-lg">
+              <div className="text-3xl font-bold text-foreground mb-2">
+                {womenFacilities.length}
               </div>
-              <div className="text-center p-4 bg-red/10 border border-red opacity-75">
-                <div className="text-3xl font-mono font-bold text-red mb-2">
-                  {menFacilities.length}
-                </div>
-                <div className="text-xs font-mono tracking-widest text-red">
-                  MEN'S UNITS
-                </div>
+              <div className="text-sm text-muted-foreground">
+                Women's Machines
               </div>
-              <div className="text-center p-4 bg-red/10 border border-red">
-                <div className="text-3xl font-mono font-bold text-red mb-2">
-                  {womenBookings.filter(
+            </div>
+            <div className="text-center p-4 bg-secondary rounded-lg">
+              <div className="text-3xl font-bold text-foreground mb-2">
+                {menFacilities.length}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Men's Machines
+              </div>
+            </div>
+            <div className="text-center p-4 bg-secondary rounded-lg">
+              <div className="text-3xl font-bold text-primary mb-2">
+                {womenBookings.filter(
+                  (b) => new Date(b.waktuBerakhir) > new Date()
+                ).length +
+                  menBookings.filter(
                     (b) => new Date(b.waktuBerakhir) > new Date()
-                  ).length +
-                    menBookings.filter(
-                      (b) => new Date(b.waktuBerakhir) > new Date()
-                    ).length}
-                </div>
-                <div className="text-xs font-mono tracking-widest text-red">
-                  ACTIVE SESSIONS
-                </div>
+                  ).length}
               </div>
-              <div className="text-center p-4 bg-red/10 border border-red opacity-50">
-                <div className="text-3xl font-mono font-bold text-red mb-2">
-                  {womenFacilities.length +
-                    menFacilities.length -
-                    womenBookings.filter(
-                      (b) =>
-                        new Date(b.waktuMulai) <= new Date() &&
-                        new Date(b.waktuBerakhir) > new Date()
-                    ).length -
-                    menBookings.filter(
-                      (b) =>
-                        new Date(b.waktuMulai) <= new Date() &&
-                        new Date(b.waktuBerakhir) > new Date()
-                    ).length}
-                </div>
-                <div className="text-xs font-mono tracking-widest text-red">
-                  AVAILABLE NOW
-                </div>
+              <div className="text-sm text-muted-foreground">
+                Active Bookings
               </div>
+            </div>
+            <div className="text-center p-4 bg-secondary rounded-lg">
+              <div className="text-3xl font-bold text-success mb-2">
+                {womenFacilities.length +
+                  menFacilities.length -
+                  womenBookings.filter(
+                    (b) =>
+                      new Date(b.waktuMulai) <= new Date() &&
+                      new Date(b.waktuBerakhir) > new Date()
+                  ).length -
+                  menBookings.filter(
+                    (b) =>
+                      new Date(b.waktuMulai) <= new Date() &&
+                      new Date(b.waktuBerakhir) > new Date()
+                  ).length}
+              </div>
+              <div className="text-sm text-muted-foreground">Available Now</div>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="bg-gradient-to-r from-purple-500 to-pink-600 rounded-lg p-8 text-white">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold mb-4">Need to do laundry?</h3>
-            <p className="text-purple-100 mb-6 max-w-2xl mx-auto">
-              Click on any machine in the layout above to see its status and
-              book a slot. Our interactive system prevents conflicts and helps
-              you plan your laundry schedule.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/users"
-                className="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition-colors"
-              >
-                Manage Users
-              </Link>
-              <button
-                onClick={() => {
-                  // Scroll to the layout
-                  window.scrollTo({ top: 300, behavior: "smooth" });
-                }}
-                className="bg-purple-600 border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-              >
-                Select Machine
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Booking Modal */}
+        <NewWashingMachineBookingModal
+          facility={selectedFacility}
+          isOpen={isBookingModalOpen}
+          onClose={() => {
+            setIsBookingModalOpen(false);
+            setSelectedFacility(null);
+          }}
+          onBookingSuccess={handleBookingSuccess}
+        />
       </div>
     </Layout>
   );

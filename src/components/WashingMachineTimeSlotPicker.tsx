@@ -1,0 +1,345 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+
+interface TimeSlot {
+  hour: number;
+  startTime: string;
+  endTime: string;
+  display: string;
+  value: string;
+  endValue: string;
+  available?: boolean;
+}
+
+interface Props {
+  selectedDate: string;
+  selectedSlot: TimeSlot | null;
+  onSlotSelect: (slot: TimeSlot | null) => void;
+  onDateChange: (newDate: string) => void;
+  type: "men" | "women";
+  facilityId: number;
+}
+
+export default function WashingMachineTimeSlotPicker({
+  selectedDate,
+  selectedSlot,
+  onSlotSelect,
+  onDateChange,
+  type,
+  facilityId,
+}: Props) {
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch time slots from API (for availability check)
+  const fetchTimeSlots = async (date: string) => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.warn("No auth token found, using default time slots");
+        // Use default slots if no token (user not logged in)
+        const defaultSlots = generateDefaultTimeSlots(date);
+        setTimeSlots(defaultSlots);
+        setLoading(false);
+        return;
+      }
+
+      const endpoint =
+        type === "women"
+          ? `/api/v1/mesin-cuci-cewe/time-slots?date=${date}&facilityId=${facilityId}`
+          : `/api/v1/mesin-cuci-cowo/time-slots?date=${date}&facilityId=${facilityId}`;
+
+      const response = await fetch(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const slots: TimeSlot[] = result.data.map((slot: any) => ({
+          hour: new Date(slot.waktuMulai).getHours(),
+          startTime: slot.waktuMulai,
+          endTime: slot.waktuBerakhir,
+          display:
+            slot.display ||
+            `${new Date(slot.waktuMulai)
+              .getHours()
+              .toString()
+              .padStart(2, "0")}:00 - ${(
+              new Date(slot.waktuMulai).getHours() + 1
+            )
+              .toString()
+              .padStart(2, "0")}:00`,
+          value: slot.waktuMulai,
+          endValue: slot.waktuBerakhir,
+          available: slot.available,
+        }));
+        setTimeSlots(slots);
+      } else {
+        // Fallback: generate default slots if API fails
+        const defaultSlots = generateDefaultTimeSlots(date);
+        setTimeSlots(defaultSlots);
+      }
+    } catch (error) {
+      console.error("Error fetching time slots:", error);
+      // Fallback: generate default slots
+      const defaultSlots = generateDefaultTimeSlots(date);
+      setTimeSlots(defaultSlots);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate default time slots (1-hour slots, 24/7)
+  const generateDefaultTimeSlots = (date: string): TimeSlot[] => {
+    const slots: TimeSlot[] = [];
+
+    // Washing machine operates 24/7 with 1-hour slots
+    for (let hour = 0; hour < 24; hour++) {
+      const endHour = hour + 1;
+      const startHourStr = hour.toString().padStart(2, "0");
+      const endHourStr = endHour.toString().padStart(2, "0");
+
+      const startDateTime = new Date(`${date}T${startHourStr}:00:00.000Z`);
+      const endDateTime = new Date(`${date}T${endHourStr}:00:00.000Z`);
+
+      slots.push({
+        hour,
+        startTime: `${startHourStr}:00`,
+        endTime: `${endHourStr}:00`,
+        display: `${startHourStr}:00 - ${endHourStr}:00`,
+        value: startDateTime.toISOString(),
+        endValue: endDateTime.toISOString(),
+        available: true,
+      });
+    }
+    return slots;
+  };
+
+  // Fetch time slots when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      fetchTimeSlots(selectedDate);
+    }
+  }, [selectedDate, type, facilityId]);
+
+  // Check if slot is in the past
+  const isSlotInPast = (slot: TimeSlot) => {
+    const now = new Date();
+    const slotTime = new Date(slot.value);
+    return slotTime < now;
+  };
+
+  // Check if date is today
+  const isToday = (dateString: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    return dateString === today;
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString + "T00:00:00");
+    return date.toLocaleDateString("id-ID", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Navigasi tanggal
+  const goToPreviousDay = () => {
+    // Parse selectedDate sebagai WIB (UTC+7)
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const currentDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+
+    // Mundur 1 hari (24 jam)
+    currentDate.setUTCDate(currentDate.getUTCDate() - 1);
+
+    // Ambil kembali sesuai WIB (UTC+7)
+    const wibDate = new Date(currentDate.getTime() + 7 * 60 * 60 * 1000);
+
+    // Format YYYY-MM-DD
+    const newDate = wibDate.toISOString().split("T")[0];
+
+    console.log("newDate (WIB)", newDate);
+    onDateChange(newDate);
+  };
+
+  const goToNextDay = () => {
+    // Parse selectedDate sebagai WIB (UTC+7)
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const currentDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+
+    // Tambah 1 hari (24 jam)
+    currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+
+    // Ambil kembali sesuai WIB (UTC+7)
+    const wibDate = new Date(currentDate.getTime() + 7 * 60 * 60 * 1000);
+
+    // Format YYYY-MM-DD
+    const newDate = wibDate.toISOString().split("T")[0];
+
+    console.log("newDate (WIB)", newDate);
+    onDateChange(newDate);
+  };
+
+  const goToToday = () => {
+    const now = new Date();
+
+    // Geser ke WIB (UTC+7)
+    const wibDate = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+
+    // Format YYYY-MM-DD
+    const today = wibDate.toISOString().split("T")[0];
+
+    console.log("today (WIB)", today);
+    onDateChange(today);
+  };
+
+  const handleSlotClick = (slot: TimeSlot) => {
+    if (!slot.available || isSlotInPast(slot)) return;
+
+    if (selectedSlot?.value === slot.value) {
+      onSlotSelect(null);
+    } else {
+      onSlotSelect(slot);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Date Navigation */}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={goToPreviousDay}
+          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </button>
+
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            {formatDate(selectedDate)}
+          </h3>
+          {isToday(selectedDate) && (
+            <span className="text-sm text-blue-600 dark:text-blue-400">
+              Hari ini
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={goToNextDay}
+          className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+        >
+          <ChevronRightIcon className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Today Button */}
+      {!isToday(selectedDate) && (
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={goToToday}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Kembali ke Hari Ini
+          </button>
+        </div>
+      )}
+
+      {/* Time Slots */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Available Time Slots (1-hour sessions)
+        </h3>
+
+        {!localStorage.getItem("token") && (
+          <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠️ You are not logged in. Showing default time slots.
+              <a href="/login" className="underline ml-1">
+                Login
+              </a>{" "}
+              to see real-time availability.
+            </p>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              Loading time slots...
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {timeSlots.map((slot) => {
+              const isPast = isSlotInPast(slot);
+              const isBooked = !slot.available;
+              const isSelected = selectedSlot?.value === slot.value;
+
+              return (
+                <button
+                  type="button"
+                  key={slot.value}
+                  onClick={() => handleSlotClick(slot)}
+                  disabled={!slot.available || isPast}
+                  className={`
+                    p-3 rounded-lg border-2 text-sm font-medium transition-all
+                    ${
+                      isPast
+                        ? "border-red-200 bg-red-50 text-red-400 cursor-not-allowed dark:border-red-800 dark:bg-red-900/20 dark:text-red-500"
+                        : isBooked
+                        ? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed dark:border-gray-700 dark:bg-gray-800 dark:text-gray-500"
+                        : isSelected
+                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-900/20 dark:text-blue-300"
+                        : "border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 text-gray-700 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-blue-500 dark:hover:bg-blue-900/20 dark:text-gray-200"
+                    }
+                  `}
+                >
+                  <div className="text-center">
+                    <div className="font-semibold">{slot.display}</div>
+                    {isPast && (
+                      <div className="text-xs text-red-500 mt-1">Past</div>
+                    )}
+                    {isBooked && !isPast && (
+                      <div className="text-xs text-red-500 mt-1">Booked</div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Selected Slot Info */}
+      {selectedSlot && (
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+            Selected Time Slot
+          </h4>
+          <p className="text-blue-700 dark:text-blue-300">
+            {selectedSlot.display} (1-hour session)
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

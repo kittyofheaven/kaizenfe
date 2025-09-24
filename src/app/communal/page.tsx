@@ -1,133 +1,150 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import Layout from '@/components/Layout'
-import { apiClient, ApiError } from '@/lib/api'
-import { CommunalBooking, CreateCommunalBookingRequest, User } from '@/types/api'
-import { PlusIcon, CalendarIcon, MapPinIcon, UsersIcon, ClockIcon } from '@heroicons/react/24/outline'
-import CommunalBookingForm from '@/components/CommunalBookingForm'
-import DeleteConfirmModal from '@/components/DeleteConfirmModal'
+import { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import { apiClient, ApiError } from "@/lib/api";
+import { CommunalBooking, CreateCommunalBookingRequest } from "@/types/api";
+import {
+  PlusIcon,
+  CalendarIcon,
+  MapPinIcon,
+  UsersIcon,
+  ClockIcon,
+} from "@heroicons/react/24/outline";
+import CommunalBookingForm from "@/components/CommunalBookingForm";
+import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 
 export default function CommunalPage() {
-  const [bookings, setBookings] = useState<CommunalBooking[]>([])
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [editingBooking, setEditingBooking] = useState<CommunalBooking | null>(null)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [deletingBooking, setDeletingBooking] = useState<CommunalBooking | null>(null)
-  const [selectedFloor, setSelectedFloor] = useState<string>('all')
+  const [bookings, setBookings] = useState<CommunalBooking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<CommunalBooking | null>(
+    null
+  );
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingBooking, setDeletingBooking] =
+    useState<CommunalBooking | null>(null);
+  const [selectedFloor, setSelectedFloor] = useState<string>("all");
 
   const fetchData = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const [bookingsResponse, usersResponse] = await Promise.all([
-        apiClient.getCommunalBookings({ limit: 50, sortBy: 'waktuMulai', sortOrder: 'desc' }),
-        apiClient.getUsers({ limit: 100 })
-      ])
+      setLoading(true);
+      setError(null);
 
-      let filteredBookings = bookingsResponse.data
-      if (selectedFloor !== 'all') {
-        filteredBookings = bookingsResponse.data.filter(booking => booking.lantai === selectedFloor)
+      const bookingsResponse = await apiClient.getCommunalBookings({
+        limit: 50,
+        sortBy: "waktuMulai",
+        sortOrder: "desc",
+      });
+
+      let filteredBookings = bookingsResponse.data;
+      if (selectedFloor !== "all") {
+        filteredBookings = bookingsResponse.data.filter(
+          (booking) => booking.lantai === selectedFloor
+        );
       }
 
-      setBookings(filteredBookings)
-      setUsers(usersResponse.data)
+      setBookings(filteredBookings);
+      // Users are no longer needed as we get user info from JWT
     } catch (err) {
-      console.error('Error fetching data:', err)
-      setError(err instanceof ApiError ? err.message : 'Failed to fetch data')
+      console.error("Error fetching data:", err);
+      setError(err instanceof ApiError ? err.message : "Failed to fetch data");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchData()
-  }, [selectedFloor])
+    fetchData();
+  }, [selectedFloor]);
 
-  const handleCreateBooking = async (bookingData: CreateCommunalBookingRequest) => {
+  const handleCreateBooking = async (
+    bookingData: CreateCommunalBookingRequest
+  ) => {
     try {
-      await apiClient.createCommunalBooking(bookingData)
-      setShowForm(false)
-      fetchData()
+      await apiClient.createCommunalBooking(bookingData);
+      setShowForm(false);
+      fetchData();
     } catch (err) {
-      console.error('Error creating booking:', err)
-      throw err
+      console.error("Error creating booking:", err);
+      throw err;
     }
-  }
+  };
 
-  const handleUpdateBooking = async (bookingData: CreateCommunalBookingRequest) => {
-    if (!editingBooking) return
-    
+  const handleUpdateBooking = async (
+    bookingData: CreateCommunalBookingRequest
+  ) => {
+    if (!editingBooking) return;
+
     try {
-      await apiClient.updateCommunalBooking(editingBooking.id, bookingData)
-      setEditingBooking(null)
-      setShowForm(false)
-      fetchData()
+      await apiClient.updateCommunalBooking(editingBooking.id, bookingData);
+      setEditingBooking(null);
+      setShowForm(false);
+      fetchData();
     } catch (err) {
-      console.error('Error updating booking:', err)
-      throw err
+      console.error("Error updating booking:", err);
+      throw err;
     }
-  }
+  };
 
   const handleDeleteBooking = async () => {
-    if (!deletingBooking) return
+    if (!deletingBooking) return;
 
     try {
-      await apiClient.deleteCommunalBooking(deletingBooking.id)
-      setShowDeleteModal(false)
-      setDeletingBooking(null)
-      fetchData()
+      await apiClient.deleteCommunalBooking(deletingBooking.id);
+      setShowDeleteModal(false);
+      setDeletingBooking(null);
+      fetchData();
     } catch (err) {
-      console.error('Error deleting booking:', err)
+      console.error("Error deleting booking:", err);
     }
-  }
+  };
 
   const openEditForm = (booking: CommunalBooking) => {
-    setEditingBooking(booking)
-    setShowForm(true)
-  }
+    setEditingBooking(booking);
+    setShowForm(true);
+  };
 
   const openDeleteModal = (booking: CommunalBooking) => {
-    setDeletingBooking(booking)
-    setShowDeleteModal(true)
-  }
+    setDeletingBooking(booking);
+    setShowDeleteModal(true);
+  };
 
   const closeForm = () => {
-    setShowForm(false)
-    setEditingBooking(null)
-  }
+    setShowForm(false);
+    setEditingBooking(null);
+  };
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return {
       date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-  }
+      time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    };
+  };
 
   const getStatusColor = (booking: CommunalBooking) => {
-    if (booking.isDone) return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-    
-    const now = new Date()
-    const startTime = new Date(booking.waktuMulai)
-    
-    if (startTime < now) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-    return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-  }
+    if (booking.isDone)
+      return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+
+    const now = new Date();
+    const startTime = new Date(booking.waktuMulai);
+
+    if (startTime < now)
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
+    return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+  };
 
   const getStatusText = (booking: CommunalBooking) => {
-    if (booking.isDone) return 'Completed'
-    
-    const now = new Date()
-    const startTime = new Date(booking.waktuMulai)
-    
-    if (startTime < now) return 'In Progress'
-    return 'Scheduled'
-  }
+    if (booking.isDone) return "Completed";
+
+    const now = new Date();
+    const startTime = new Date(booking.waktuMulai);
+
+    if (startTime < now) return "In Progress";
+    return "Scheduled";
+  };
 
   if (loading) {
     return (
@@ -136,7 +153,7 @@ export default function CommunalPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       </Layout>
-    )
+    );
   }
 
   return (
@@ -182,9 +199,9 @@ export default function CommunalPage() {
         {/* Bookings Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {bookings.map((booking) => {
-            const startDateTime = formatDateTime(booking.waktuMulai)
-            const endDateTime = formatDateTime(booking.waktuBerakhir)
-            
+            const startDateTime = formatDateTime(booking.waktuMulai);
+            const endDateTime = formatDateTime(booking.waktuBerakhir);
+
             return (
               <div
                 key={booking.id}
@@ -192,7 +209,11 @@ export default function CommunalPage() {
               >
                 {/* Status Badge */}
                 <div className="flex items-center justify-between mb-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking)}`}>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                      booking
+                    )}`}
+                  >
                     {getStatusText(booking)}
                   </span>
                   <div className="flex space-x-2">
@@ -200,16 +221,36 @@ export default function CommunalPage() {
                       onClick={() => openEditForm(booking)}
                       className="text-primary hover:text-primary/80"
                     >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
                       </svg>
                     </button>
                     <button
                       onClick={() => openDeleteModal(booking)}
                       className="text-red-600 hover:text-red-800"
                     >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
                       </svg>
                     </button>
                   </div>
@@ -220,20 +261,23 @@ export default function CommunalPage() {
                   <div className="flex items-center text-gray-600 dark:text-gray-300">
                     <CalendarIcon className="h-4 w-4 mr-2" />
                     <span className="text-sm">
-                      {startDateTime.date} • {startDateTime.time} - {endDateTime.time}
+                      {startDateTime.date} • {startDateTime.time} -{" "}
+                      {endDateTime.time}
                     </span>
                   </div>
-                  
+
                   <div className="flex items-center text-gray-600 dark:text-gray-300">
                     <MapPinIcon className="h-4 w-4 mr-2" />
                     <span className="text-sm">Floor {booking.lantai}</span>
                   </div>
-                  
+
                   <div className="flex items-center text-gray-600 dark:text-gray-300">
                     <UsersIcon className="h-4 w-4 mr-2" />
-                    <span className="text-sm">{booking.jumlahPengguna} people</span>
+                    <span className="text-sm">
+                      {booking.jumlahPengguna} people
+                    </span>
                   </div>
-                  
+
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {booking.penanggungJawab.namaLengkap}
@@ -242,7 +286,7 @@ export default function CommunalPage() {
                       {booking.penanggungJawab.nomorWa}
                     </p>
                   </div>
-                  
+
                   {booking.keterangan && (
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
                       <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -252,14 +296,16 @@ export default function CommunalPage() {
                   )}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 
         {bookings.length === 0 && !loading && (
           <div className="text-center py-12">
             <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No bookings</h3>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+              No bookings
+            </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Get started by creating a new booking.
             </p>
@@ -270,8 +316,9 @@ export default function CommunalPage() {
         {showForm && (
           <CommunalBookingForm
             booking={editingBooking}
-            users={users}
-            onSubmit={editingBooking ? handleUpdateBooking : handleCreateBooking}
+            onSubmit={
+              editingBooking ? handleUpdateBooking : handleCreateBooking
+            }
             onClose={closeForm}
           />
         )}
@@ -283,12 +330,12 @@ export default function CommunalPage() {
             message={`Are you sure you want to delete this booking? This action cannot be undone.`}
             onConfirm={handleDeleteBooking}
             onCancel={() => {
-              setShowDeleteModal(false)
-              setDeletingBooking(null)
+              setShowDeleteModal(false);
+              setDeletingBooking(null);
             }}
           />
         )}
       </div>
     </Layout>
-  )
+  );
 }

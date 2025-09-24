@@ -1,39 +1,51 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { CommunalBooking, CreateCommunalBookingRequest, User, TimeSlot } from '@/types/api'
-import { apiClient } from '@/lib/api'
-import { XMarkIcon } from '@heroicons/react/24/outline'
-import TimeSlotPicker from './TimeSlotPicker'
+import { useState, useEffect } from "react";
+import { CommunalBooking, CreateCommunalBookingRequest } from "@/types/api";
+import { apiClient } from "@/lib/api";
+import { XMarkIcon } from "@heroicons/react/24/outline";
+import WashingMachineTimeSlotPicker from "./WashingMachineTimeSlotPicker";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CommunalBookingFormProps {
-  booking?: CommunalBooking | null
-  users: User[]
-  onSubmit: (bookingData: CreateCommunalBookingRequest) => Promise<void>
-  onClose: () => void
+  booking?: CommunalBooking | null;
+  onSubmit: (bookingData: CreateCommunalBookingRequest) => Promise<void>;
+  onClose: () => void;
 }
 
-export default function CommunalBookingForm({ booking, users, onSubmit, onClose }: CommunalBookingFormProps) {
+export default function CommunalBookingForm({
+  booking,
+  onSubmit,
+  onClose,
+}: CommunalBookingFormProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<CreateCommunalBookingRequest>({
-    idPenanggungJawab: '',
-    waktuMulai: '',
-    waktuBerakhir: '',
-    jumlahPengguna: '',
-    lantai: '1',
-    keterangan: '',
+    idPenanggungJawab: user?.id || "",
+    waktuMulai: "",
+    waktuBerakhir: "",
+    jumlahPengguna: "",
+    lantai: "1",
+    keterangan: "",
     isDone: false,
-  })
-  const [selectedDate, setSelectedDate] = useState<string>('')
-  const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
-  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  });
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedSlot, setSelectedSlot] = useState<{
+    hour: number;
+    startTime: string;
+    endTime: string;
+    display: string;
+    value: string;
+    endValue: string;
+  } | null>(null);
+  const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (booking) {
-      const startDate = new Date(booking.waktuMulai)
-      const dateString = startDate.toISOString().split('T')[0]
-      
+      const startDate = new Date(booking.waktuMulai);
+      const dateString = startDate.toISOString().split("T")[0];
+
       setFormData({
         idPenanggungJawab: booking.idPenanggungJawab,
         waktuMulai: booking.waktuMulai,
@@ -42,84 +54,95 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
         lantai: booking.lantai,
         keterangan: booking.keterangan,
         isDone: booking.isDone,
-      })
-      setSelectedDate(dateString)
+      });
+      setSelectedDate(dateString);
     } else {
       // Set default date to today
-      const today = new Date()
-      const dateString = today.toISOString().split('T')[0]
-      setSelectedDate(dateString)
+      const today = new Date();
+      const dateString = today.toISOString().split("T")[0];
+      setSelectedDate(dateString);
     }
-  }, [booking])
+  }, [booking]);
 
   useEffect(() => {
     if (selectedDate && formData.lantai) {
-      fetchAvailableSlots()
+      fetchAvailableSlots();
     }
-  }, [selectedDate, formData.lantai])
+  }, [selectedDate, formData.lantai]);
 
   const fetchAvailableSlots = async () => {
     try {
-      const response = await apiClient.getCommunalAvailableSlots(selectedDate, formData.lantai)
-      setAvailableSlots(response.data || [])
+      const response = await apiClient.getCommunalAvailableSlots(
+        selectedDate,
+        formData.lantai
+      );
+      if (response.success && response.data) {
+        // Extract unavailable slots (where available: false)
+        const unavailable = response.data
+          .filter((slot) => slot.available === false)
+          .map((slot) => {
+            const startDate = new Date(slot.waktuMulai);
+            return startDate.getHours().toString();
+          });
+        setUnavailableSlots(unavailable);
+      }
     } catch (err) {
-      console.error('Error fetching available slots:', err)
-      setAvailableSlots([])
+      console.error("Error fetching available slots:", err);
+      setUnavailableSlots([]); // Default to all slots available on error
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!selectedSlot) {
-      setError('Please select a time slot')
-      return
+      setError("Please select a time slot");
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       const bookingData = {
         ...formData,
-        waktuMulai: selectedSlot.waktuMulai,
-        waktuBerakhir: selectedSlot.waktuBerakhir,
-      }
-      
-      await onSubmit(bookingData)
-    } catch (err: any) {
-      setError(err.message || 'An error occurred')
-    } finally {
-      setLoading(false)
-    }
-  }
+        waktuMulai: selectedSlot.value,
+        waktuBerakhir: selectedSlot.endValue,
+      };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked
-      setFormData(prev => ({
-        ...prev,
-        [name]: checked
-      }))
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }))
+      await onSubmit(bookingData);
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value, type } = e.target;
+
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: checked,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedDate(e.target.value)
-    setSelectedSlot(null)
-  }
-
-  const handleSlotSelect = (slot: TimeSlot) => {
-    setSelectedSlot(slot)
-    setError(null)
-  }
+    setSelectedDate(e.target.value);
+    setSelectedSlot(null);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -127,7 +150,9 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {booking ? 'Edit Communal Room Booking' : 'New Communal Room Booking'}
+            {booking
+              ? "Edit Communal Room Booking"
+              : "New Communal Room Booking"}
           </h2>
           <button
             onClick={onClose}
@@ -148,29 +173,20 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Responsible Person */}
             <div>
-              <label htmlFor="idPenanggungJawab" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Responsible Person *
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Responsible Person
               </label>
-              <select
-                id="idPenanggungJawab"
-                name="idPenanggungJawab"
-                value={formData.idPenanggungJawab}
-                onChange={handleChange}
-                required
-                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              >
-                <option value="">Select a person</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.namaLengkap} ({user.namaPanggilan})
-                  </option>
-                ))}
-              </select>
+              <div className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-gray-50 dark:bg-gray-600 text-gray-900 dark:text-white">
+                {user?.namaLengkap} ({user?.namaPanggilan})
+              </div>
             </div>
 
             {/* Floor */}
             <div>
-              <label htmlFor="lantai" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="lantai"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Floor *
               </label>
               <select
@@ -191,7 +207,10 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Number of Users */}
             <div>
-              <label htmlFor="jumlahPengguna" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="jumlahPengguna"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Number of People *
               </label>
               <input
@@ -209,7 +228,10 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
 
             {/* Date */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="date"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Date *
               </label>
               <input
@@ -217,7 +239,7 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
                 id="date"
                 value={selectedDate}
                 onChange={handleDateChange}
-                min={new Date().toISOString().split('T')[0]}
+                min={new Date().toISOString().split("T")[0]}
                 required
                 className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
@@ -230,17 +252,22 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Available Time Slots *
               </label>
-              <TimeSlotPicker
-                slots={availableSlots}
+              <WashingMachineTimeSlotPicker
+                selectedDate={selectedDate}
                 selectedSlot={selectedSlot}
-                onSlotSelect={handleSlotSelect}
+                onSlotSelect={setSelectedSlot}
+                onDateChange={setSelectedDate}
+                type="women"
               />
             </div>
           )}
 
           {/* Description */}
           <div>
-            <label htmlFor="keterangan" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="keterangan"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Description
             </label>
             <textarea
@@ -265,7 +292,10 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
                 onChange={handleChange}
                 className="h-4 w-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600 rounded"
               />
-              <label htmlFor="isDone" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="isDone"
+                className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+              >
                 Mark as completed
               </label>
             </div>
@@ -285,11 +315,15 @@ export default function CommunalBookingForm({ booking, users, onSubmit, onClose 
               disabled={loading || !selectedSlot}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : booking ? 'Update Booking' : 'Create Booking'}
+              {loading
+                ? "Saving..."
+                : booking
+                ? "Update Booking"
+                : "Create Booking"}
             </button>
           </div>
         </form>
       </div>
     </div>
-  )
+  );
 }

@@ -15,12 +15,17 @@ import {
   WashingMachineBooking,
   CreateWashingMachineBookingRequest,
   WashingMachineFacility,
+  CWSBooking,
+  CreateCWSBookingRequest,
   TimeSlot,
   HealthResponse,
   ApiInfoResponse,
   PaginationParams,
   TimeRangeParams,
   TimeSlotParams,
+  LoginRequest,
+  LoginResponse,
+  UpdatePasswordRequest,
 } from "@/types/api";
 
 // Use empty string for base URL to use Next.js proxy
@@ -47,15 +52,30 @@ class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    skipAuth = false
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add existing headers
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
+    // Add JWT token to headers if available and not skipping auth
+    if (!skipAuth && typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    }
+
     const config: RequestInit = {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
@@ -64,6 +84,25 @@ class ApiClient {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle token expiry/invalid token (401 Unauthorized)
+        if (response.status === 401 && !skipAuth) {
+          // Clear invalid token from localStorage
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+          }
+
+          // Redirect to login page
+          if (typeof window !== "undefined") {
+            window.location.href = "/login";
+          }
+
+          throw new ApiError(
+            "Session expired. Please login again.",
+            response.status
+          );
+        }
+
         throw new ApiError(
           data.message || "An error occurred",
           response.status,
@@ -95,11 +134,45 @@ class ApiClient {
 
   // Health Check
   async getHealth(): Promise<HealthResponse> {
-    return this.request<HealthResponse>("/api/health");
+    return this.request<HealthResponse>("/api/health", {}, true); // Skip auth for health check
   }
 
   async getApiInfo(): Promise<ApiInfoResponse> {
-    return this.request<ApiInfoResponse>(API_VERSION);
+    return this.request<ApiInfoResponse>(API_VERSION, {}, true); // Skip auth for API info
+  }
+
+  // Authentication
+  async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
+    return this.request<ApiResponse<LoginResponse>>(
+      `${API_VERSION}/auth/login`,
+      {
+        method: "POST",
+        body: JSON.stringify(credentials),
+      },
+      true // Skip auth for login
+    );
+  }
+
+  async getProfile(): Promise<ApiResponse<User>> {
+    return this.request<ApiResponse<User>>(`${API_VERSION}/auth/profile`);
+  }
+
+  async updatePassword(
+    passwordData: UpdatePasswordRequest
+  ): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(
+      `${API_VERSION}/auth/update-password`,
+      {
+        method: "PUT",
+        body: JSON.stringify(passwordData),
+      }
+    );
+  }
+
+  async logout(): Promise<ApiResponse<null>> {
+    return this.request<ApiResponse<null>>(`${API_VERSION}/auth/logout`, {
+      method: "POST",
+    });
   }
 
   // Users
@@ -273,6 +346,15 @@ class ApiClient {
     );
   }
 
+  async getSerbagunaTimeSlots(
+    params: TimeSlotParams & { areaId?: string }
+  ): Promise<ApiResponse<TimeSlot[]>> {
+    const queryParams = this.buildQueryParams(params);
+    return this.request<ApiResponse<TimeSlot[]>>(
+      `${API_VERSION}/serbaguna/time-slots${queryParams}`
+    );
+  }
+
   // Kitchen Bookings
   async getKitchenBookings(
     params: PaginationParams = {}
@@ -299,7 +381,7 @@ class ApiClient {
   }
 
   async getKitchenTimeSlots(
-    params: TimeSlotParams
+    params: TimeSlotParams & { facilityId?: string }
   ): Promise<ApiResponse<TimeSlot[]>> {
     const queryParams = this.buildQueryParams(params);
     return this.request<ApiResponse<TimeSlot[]>>(
@@ -364,6 +446,55 @@ class ApiClient {
   > {
     return this.request<ApiResponse<WashingMachineFacility[]>>(
       `${API_VERSION}/mesin-cuci-cowo/facilities`
+    );
+  }
+
+  // CWS (Community Work Space) Bookings
+  async getCWSBookings(
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<CWSBooking>> {
+    const queryParams = this.buildQueryParams(params);
+    return this.request<PaginatedResponse<CWSBooking>>(
+      `${API_VERSION}/cws${queryParams}`
+    );
+  }
+
+  async createCWSBooking(
+    bookingData: CreateCWSBookingRequest
+  ): Promise<ApiResponse<CWSBooking>> {
+    return this.request<ApiResponse<CWSBooking>>(`${API_VERSION}/cws`, {
+      method: "POST",
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  async updateCWSBooking(
+    id: string,
+    bookingData: Partial<CreateCWSBookingRequest>
+  ): Promise<ApiResponse<CWSBooking>> {
+    return this.request<ApiResponse<CWSBooking>>(`${API_VERSION}/cws/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  async deleteCWSBooking(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`${API_VERSION}/cws/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getCWSBookingsByResponsiblePerson(
+    penanggungJawabId: string
+  ): Promise<ApiResponse<CWSBooking[]>> {
+    return this.request<ApiResponse<CWSBooking[]>>(
+      `${API_VERSION}/cws/penanggung-jawab/${penanggungJawabId}`
+    );
+  }
+
+  async getCWSBookingsByDate(date: string): Promise<ApiResponse<CWSBooking[]>> {
+    return this.request<ApiResponse<CWSBooking[]>>(
+      `${API_VERSION}/cws/date/${date}`
     );
   }
 }
