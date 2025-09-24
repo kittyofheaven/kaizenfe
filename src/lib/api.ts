@@ -21,7 +21,6 @@ import {
   HealthResponse,
   ApiInfoResponse,
   PaginationParams,
-  TimeRangeParams,
   TimeSlotParams,
   LoginRequest,
   LoginResponse,
@@ -31,6 +30,34 @@ import {
 // Use empty string for base URL to use Next.js proxy
 const API_BASE_URL = "";
 const API_VERSION = "/api/v1";
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+type QueryParamValue = string | number | boolean | Date | null | undefined;
+type QueryParams = Record<string, QueryParamValue | QueryParamValue[]>;
+
+const extractErrorMessage = (data: unknown, fallback: string): string => {
+  if (isRecord(data) && typeof data.message === "string") {
+    return data.message;
+  }
+
+  if (typeof data === "string" && data.length > 0) {
+    return data;
+  }
+
+  return fallback;
+};
+
+const extractErrorDetails = (data: unknown): string[] | undefined => {
+  if (isRecord(data) && Array.isArray(data.errors)) {
+    return data.errors.filter(
+      (error): error is string => typeof error === "string"
+    );
+  }
+
+  return undefined;
+};
 
 class ApiError extends Error {
   constructor(
@@ -81,7 +108,22 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      const responseText = await response.text();
+      const trimmedResponse = responseText.trim();
+
+      let data: unknown = null;
+
+      if (trimmedResponse) {
+        try {
+          data = JSON.parse(trimmedResponse);
+        } catch (parseError) {
+          const contentType = response.headers.get("content-type") ?? "";
+          if (contentType.includes("application/json")) {
+            console.error("Failed to parse JSON response:", parseError);
+          }
+          data = trimmedResponse;
+        }
+      }
 
       if (!response.ok) {
         // Handle token expiry/invalid token (401 Unauthorized)
@@ -98,19 +140,22 @@ class ApiClient {
           }
 
           throw new ApiError(
-            "Session expired. Please login again.",
+            extractErrorMessage(
+              data,
+              "Session expired. Please login again."
+            ),
             response.status
           );
         }
 
         throw new ApiError(
-          data.message || "An error occurred",
+          extractErrorMessage(data, "An error occurred"),
           response.status,
-          data.errors
+          extractErrorDetails(data)
         );
       }
 
-      return data;
+      return data as T;
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -119,18 +164,30 @@ class ApiClient {
     }
   }
 
-  private buildQueryParams(params: Record<string, any>): string {
-    const searchParams = new URLSearchParams();
+    private buildQueryParams(params: QueryParams): string {
+      const searchParams = new URLSearchParams();
 
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, value.toString());
-      }
-    });
+      const appendValue = (key: string, rawValue: QueryParamValue) => {
+        if (rawValue === undefined || rawValue === null) {
+          return;
+        }
 
-    const queryString = searchParams.toString();
-    return queryString ? `?${queryString}` : "";
-  }
+        const value =
+          rawValue instanceof Date ? rawValue.toISOString() : rawValue.toString();
+        searchParams.append(key, value);
+      };
+
+      Object.entries(params).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          value.forEach((item) => appendValue(key, item));
+        } else {
+          appendValue(key, value);
+        }
+      });
+
+      const queryString = searchParams.toString();
+      return queryString ? `?${queryString}` : "";
+    }
 
   // Health Check
   async getHealth(): Promise<HealthResponse> {
