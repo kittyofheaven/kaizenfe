@@ -333,83 +333,92 @@ export default function ProfilePage() {
   return (
     <Layout>
       <div className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="card p-6 space-y-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-foreground">Profile</h1>
-              <p className="text-sm text-muted-foreground">
-                Personal details and account information
-              </p>
-            </div>
-            <div className="space-y-3 text-sm">
+        <section className="card relative overflow-hidden p-6 md:p-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-accent/15" />
+          <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-4">
               <div>
-                <p className="text-muted-foreground">Full Name</p>
-                <p className="text-foreground font-medium">{user.namaLengkap}</p>
+                <h1 className="text-2xl font-semibold text-foreground">
+                  Profile
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Personal details and account information
+                </p>
               </div>
-              <div>
-                <p className="text-muted-foreground">Preferred Name</p>
-                <p className="text-foreground font-medium">{user.namaPanggilan}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">WhatsApp</p>
-                <p className="text-foreground font-medium">{user.nomorWa}</p>
-              </div>
-              {user.angkatan?.namaAngkatan && (
+              <div className="space-y-3 text-sm rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
                 <div>
-                  <p className="text-muted-foreground">Angkatan</p>
+                  <p className="text-muted-foreground">Full Name</p>
                   <p className="text-foreground font-medium">
-                    {user.angkatan.namaAngkatan}
+                    {user.namaLengkap}
                   </p>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="card p-6 space-y-4 lg:col-span-2">
-            <h2 className="text-lg font-semibold text-foreground">
-              Booking Highlights
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div className="rounded-lg bg-secondary p-4">
-                <p className="text-muted-foreground">Total Bookings</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {totalBookings}
-                </p>
-              </div>
-              <div className="rounded-lg bg-secondary p-4">
-                <p className="text-muted-foreground">Upcoming</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {upcomingCount}
-                </p>
-              </div>
-              <div className="rounded-lg bg-secondary p-4">
-                <p className="text-muted-foreground">Past 7 Days</p>
-                <p className="text-2xl font-semibold text-foreground">
-                  {pastSevenDays}
-                </p>
+                <div>
+                  <p className="text-muted-foreground">Preferred Name</p>
+                  <p className="text-foreground font-medium">
+                    {user.namaPanggilan}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">WhatsApp</p>
+                  <p className="text-foreground font-medium">{user.nomorWa}</p>
+                </div>
+                {user.angkatan?.namaAngkatan ? (
+                  <div>
+                    <p className="text-muted-foreground">Angkatan</p>
+                    <p className="text-foreground font-medium">
+                      {user.angkatan.namaAngkatan}
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </div>
-          </div>
-        </div>
 
-        <div className="card p-6">
+            <div className="rounded-2xl border border-border/70 bg-background/80 p-6 backdrop-blur">
+              <h2 className="text-lg font-semibold text-foreground">
+                Booking Highlights
+              </h2>
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3 text-sm">
+                <div className="rounded-lg border border-border/70 bg-background/70 p-4 backdrop-blur">
+                  <p className="text-muted-foreground">Total Bookings</p>
+                  <p className="text-2xl font-semibold text-foreground">
+                    {totalBookings}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background/70 p-4 backdrop-blur">
+                  <p className="text-muted-foreground">Upcoming</p>
+                  <p className="text-2xl font-semibold text-foreground">
+                    {upcomingCount}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-background/70 p-4 backdrop-blur">
+                  <p className="text-muted-foreground">Past 7 Days</p>
+                  <p className="text-2xl font-semibold text-foreground">
+                    {pastSevenDays}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="card p-6 md:p-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-foreground">
               Upcoming & Ongoing Bookings
             </h2>
-            {loading && (
+            {loading ? (
               <div className="flex items-center text-sm text-muted-foreground">
                 <span className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 Loading...
               </div>
-            )}
+            ) : null}
           </div>
 
-          {error && (
+          {error ? (
             <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
               {error}
             </div>
-          )}
+          ) : null}
 
           {!loading && upcomingBookings.length === 0 ? (
             <div className="text-sm text-muted-foreground">
@@ -417,60 +426,60 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
-          {upcomingBookings.map((booking) => (
-            <div
-              key={`upcoming-${booking.id}-${booking.start}`}
-              className="rounded-lg border border-border bg-secondary/40 p-4"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-3">
-                  <booking.icon className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">
-                      {booking.facility}
+              {upcomingBookings.map((booking) => (
+                <div
+                  key={`upcoming-${booking.id}-${booking.start}`}
+                  className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <booking.icon className="h-5 w-5 text-primary" />
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground">
+                          {booking.facility}
                         </h3>
                         <p className="text-xs text-muted-foreground">
                           {formatRange(booking.start, booking.end)}
                         </p>
-                        {booking.location && (
+                        {booking.location ? (
                           <p className="mt-1 text-xs text-muted-foreground">
                             📍 {booking.location}
                           </p>
-                        )}
-                        {booking.description && (
+                        ) : null}
+                        {booking.description ? (
                           <p className="mt-1 text-xs text-muted-foreground">
                             {booking.description}
                           </p>
-                        )}
-                        {booking.participants && (
+                        ) : null}
+                        {booking.participants ? (
                           <p className="mt-1 text-xs text-muted-foreground">
                             👥 {booking.participants}
                           </p>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                     <div className="flex flex-col items-end space-y-2">
                       <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        className={`pill text-xs ${
                           booking.status === "ongoing"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                            ? "bg-primary/20 text-primary"
+                            : "bg-warning/20 text-warning"
                         }`}
                       >
                         {booking.status === "ongoing" ? "Ongoing" : "Upcoming"}
                       </span>
-                      {booking.status === "upcoming" && (
+                      {booking.status === "upcoming" ? (
                         <button
                           type="button"
                           onClick={() => handleCancelBooking(booking)}
                           disabled={cancellingId === booking.id}
-                          className="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="text-xs font-medium text-destructive transition hover:text-destructive/80 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {cancellingId === booking.id
                             ? "Cancelling..."
                             : "Cancel booking"}
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -479,7 +488,7 @@ export default function ProfilePage() {
           )}
         </div>
 
-        <div className="card p-6">
+        <div className="card p-6 md:p-8">
           <h2 className="text-lg font-semibold text-foreground mb-4">
             Past Bookings
           </h2>
@@ -492,9 +501,9 @@ export default function ProfilePage() {
               {pastBookings.map((booking) => (
                 <div
                   key={`history-${booking.id}-${booking.start}`}
-                  className="rounded-lg border border-border bg-secondary/30 p-4"
+                  className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur"
                 >
-                  <div className="flex items-start space-x-3">
+                  <div className="flex items-start gap-3">
                     <booking.icon className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">
@@ -503,16 +512,16 @@ export default function ProfilePage() {
                       <p className="text-xs text-muted-foreground">
                         {formatRange(booking.start, booking.end)}
                       </p>
-                      {booking.location && (
+                      {booking.location ? (
                         <p className="mt-1 text-xs text-muted-foreground">
                           📍 {booking.location}
                         </p>
-                      )}
-                      {booking.description && (
+                      ) : null}
+                      {booking.description ? (
                         <p className="mt-1 text-xs text-muted-foreground">
                           {booking.description}
                         </p>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>

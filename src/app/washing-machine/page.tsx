@@ -147,59 +147,116 @@ export default function WashingMachinePage() {
   return (
     <Layout>
       <div className="space-y-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            Washing Machine Booking
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Book your preferred washing machine slot
-          </p>
-        </div>
+        <section className="card relative overflow-hidden p-6 md:p-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-accent/15" />
+          <div className="relative space-y-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2">
+                <div className="pill text-xs text-primary">
+                  Washing Machine
+                </div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Washing Machine Booking
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Book your preferred washing machine slot.
+                </p>
+              </div>
 
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-secondary rounded-lg p-1 flex">
-            <button
-              onClick={() => setActiveTab("women")}
-              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
-                activeTab === "women"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Women&apos;s Section
-            </button>
-            <button
-              onClick={() => setActiveTab("men")}
-              className={`px-6 py-2 rounded-md font-medium transition-all duration-200 ${
-                activeTab === "men"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Men&apos;s Section
-            </button>
+              <div className="rounded-full border border-border/80 bg-background/70 p-1 flex">
+                <button
+                  onClick={() => setActiveTab("women")}
+                  className={`rounded-full px-6 py-2 text-sm font-semibold transition duration-200 ${
+                    activeTab === "women"
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Women&apos;s Section
+                </button>
+                <button
+                  onClick={() => setActiveTab("men")}
+                  className={`rounded-full px-6 py-2 text-sm font-semibold transition duration-200 ${
+                    activeTab === "men"
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Men&apos;s Section
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-4">
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Women&apos;s Machines
+                </p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {womenFacilities.length}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Men&apos;s Machines
+                </p>
+                <p className="text-2xl font-semibold text-foreground">
+                  {menFacilities.length}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Active Bookings
+                </p>
+                <p className="text-2xl font-semibold text-primary">
+                  {womenBookings.filter(
+                    (b) => new Date(b.waktuBerakhir) > new Date()
+                  ).length +
+                    menBookings.filter(
+                      (b) => new Date(b.waktuBerakhir) > new Date()
+                    ).length}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                  Available Now
+                </p>
+                <p className="text-2xl font-semibold text-success">
+                  {womenFacilities.length +
+                    menFacilities.length -
+                    womenBookings.filter(
+                      (b) =>
+                        new Date(b.waktuMulai) <= new Date() &&
+                        new Date(b.waktuBerakhir) > new Date()
+                    ).length -
+                    menBookings.filter(
+                      (b) =>
+                        new Date(b.waktuMulai) <= new Date() &&
+                        new Date(b.waktuBerakhir) > new Date()
+                    ).length}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="card p-6 md:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {(activeTab === "women" ? womenFacilities : menFacilities).map(
+              (facility) => (
+                <WashingMachineCard
+                  key={facility.id}
+                  facility={facility}
+                  bookings={activeTab === "women" ? womenBookings : menBookings}
+                  onClick={() => handleMachineClick(facility)}
+                  onBookNow={() => handleBookNow(facility)}
+                />
+              )
+            )}
           </div>
         </div>
 
-        {/* Machine Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {(activeTab === "women" ? womenFacilities : menFacilities).map(
-            (facility) => (
-              <WashingMachineCard
-                key={facility.id}
-                facility={facility}
-                bookings={activeTab === "women" ? womenBookings : menBookings}
-                onClick={() => handleMachineClick(facility)}
-                onBookNow={() => handleBookNow(facility)}
-              />
-            )
-          )}
-        </div>
-
-        {/* Booking Calendar for Active Tab */}
-        <div className="mt-8">
+        <div className="card p-6 md:p-8">
           <BookingCalendar
             type={activeTab}
             title={`${
@@ -208,13 +265,12 @@ export default function WashingMachinePage() {
           />
         </div>
 
-        {/* Summary Stats */}
         <div className="card p-6">
           <h3 className="text-xl font-semibold text-foreground mb-6 text-center">
             Overview
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-secondary rounded-lg">
+            <div className="text-center p-4 rounded-lg border border-border/70 bg-background/70 backdrop-blur">
               <div className="text-3xl font-bold text-foreground mb-2">
                 {womenFacilities.length}
               </div>
@@ -222,7 +278,7 @@ export default function WashingMachinePage() {
                 Women&apos;s Machines
               </div>
             </div>
-            <div className="text-center p-4 bg-secondary rounded-lg">
+            <div className="text-center p-4 rounded-lg border border-border/70 bg-background/70 backdrop-blur">
               <div className="text-3xl font-bold text-foreground mb-2">
                 {menFacilities.length}
               </div>
@@ -230,7 +286,7 @@ export default function WashingMachinePage() {
                 Men&apos;s Machines
               </div>
             </div>
-            <div className="text-center p-4 bg-secondary rounded-lg">
+            <div className="text-center p-4 rounded-lg border border-border/70 bg-background/70 backdrop-blur">
               <div className="text-3xl font-bold text-primary mb-2">
                 {womenBookings.filter(
                   (b) => new Date(b.waktuBerakhir) > new Date()
@@ -243,7 +299,7 @@ export default function WashingMachinePage() {
                 Active Bookings
               </div>
             </div>
-            <div className="text-center p-4 bg-secondary rounded-lg">
+            <div className="text-center p-4 rounded-lg border border-border/70 bg-background/70 backdrop-blur">
               <div className="text-3xl font-bold text-success mb-2">
                 {womenFacilities.length +
                   menFacilities.length -
@@ -263,7 +319,6 @@ export default function WashingMachinePage() {
           </div>
         </div>
 
-        {/* Booking Modal */}
         <NewWashingMachineBookingModal
           facility={selectedFacility}
           isOpen={isBookingModalOpen}

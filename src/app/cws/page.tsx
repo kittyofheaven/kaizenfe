@@ -61,21 +61,8 @@ export default function CWSPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-24 bg-gray-200 dark:bg-gray-700 rounded"
-                  ></div>
-                ))}
-              </div>
-              <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </div>
-          </div>
+        <div className="flex items-center justify-center h-80">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       </Layout>
     );
@@ -83,182 +70,158 @@ export default function CWSPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-                  <BuildingOffice2Icon className="h-8 w-8 mr-3 text-primary" />
-                  Community Work Space
-                </h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
-                  Book and manage your collaborative workspace sessions
-                </p>
+      <div className="space-y-8">
+        <section className="card relative overflow-hidden p-6 md:p-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-accent/15" />
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-2">
+              <div className="pill text-xs text-primary">
+                Community Work Space
               </div>
-
-              <button
-                onClick={() => setIsBookingModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Book CWS
-              </button>
+              <h1 className="text-3xl font-bold text-foreground">
+                Community Work Space
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Book and manage your collaborative workspace sessions.
+              </p>
             </div>
+            <button
+              onClick={() => setIsBookingModalOpen(true)}
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition duration-200 hover:-translate-y-0.5"
+            >
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Book CWS
+            </button>
           </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <CalendarDaysIcon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                        Total Bookings
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                        {totalBookings}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <ClockIcon className="h-6 w-6 text-accent" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                        Active Sessions
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                        {activeBookings}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <UserGroupIcon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                        Today&apos;s Sessions
-                      </dt>
-                      <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                        {todayBookings}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* CWS Booking Calendar */}
-          <div className="mb-8">
-            <CWSBookingCalendar />
-          </div>
-
-          {/* Recent Bookings */}
-          <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Recent Bookings
-              </h3>
-            </div>
-            <div className="p-6">
-              {bookings.length === 0 ? (
-                <div className="text-center py-8">
-                  <BuildingOffice2Icon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                    No bookings yet
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Start by booking your first CWS session.
+          <div className="relative mt-6 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+              <div className="flex items-center gap-3">
+                <CalendarDaysIcon className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Total
                   </p>
-                  <button
-                    onClick={() => setIsBookingModalOpen(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-2" />
-                    Book CWS Session
-                  </button>
+                  <p className="text-2xl font-semibold text-foreground">
+                    {totalBookings}
+                  </p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {bookings.slice(0, 5).map((booking) => (
-                    <div
-                      key={booking.id}
-                      className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                            {booking.penanggungJawab?.namaLengkap || "Unknown"}
-                          </h4>
-                          <span
-                            className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              booking.isDone
-                                ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                                : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-                            }`}
-                          >
-                            {booking.isDone ? "Completed" : "Active"}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {new Date(booking.waktuMulai).toLocaleDateString()} -{" "}
-                          {new Date(booking.waktuMulai).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}{" "}
-                          to{" "}
-                          {new Date(booking.waktuBerakhir).toLocaleTimeString(
-                            [],
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-500">
-                          {booking.jumlahPengguna} participants -{" "}
-                          {booking.keterangan}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+              <div className="flex items-center gap-3">
+                <ClockIcon className="h-5 w-5 text-accent" />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Active
+                  </p>
+                  <p className="text-2xl font-semibold text-foreground">
+                    {activeBookings}
+                  </p>
                 </div>
-              )}
+              </div>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+              <div className="flex items-center gap-3">
+                <UserGroupIcon className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Today
+                  </p>
+                  <p className="text-2xl font-semibold text-foreground">
+                    {todayBookings}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
+
+        <div className="card p-6 md:p-8">
+          <CWSBookingCalendar />
         </div>
 
-        {/* CWS Booking Modal */}
-        {isBookingModalOpen && (
+        <div className="card p-6 md:p-8">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Recent Bookings
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Pantau booking terakhir dan statusnya.
+              </p>
+            </div>
+          </div>
+          {bookings.length === 0 ? (
+            <div className="text-center py-10">
+              <BuildingOffice2Icon className="mx-auto h-12 w-12 text-primary mb-4" />
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                No bookings yet
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Start by booking your first CWS session.
+              </p>
+              <button
+                onClick={() => setIsBookingModalOpen(true)}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition duration-200 hover:-translate-y-0.5"
+              >
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Book CWS Session
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {bookings.slice(0, 5).map((booking) => (
+                <div
+                  key={booking.id}
+                  className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur transition hover:-translate-y-0.5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-foreground">
+                          {booking.penanggungJawab?.namaLengkap || "Unknown"}
+                        </h4>
+                        <span
+                          className={`pill text-xs ${
+                            booking.isDone
+                              ? "bg-success/20 text-success"
+                              : "bg-primary/20 text-primary"
+                          }`}
+                        >
+                          {booking.isDone ? "Completed" : "Active"}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(booking.waktuMulai).toLocaleDateString()} ·{" "}
+                        {new Date(booking.waktuMulai).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}{" "}
+                        to{" "}
+                        {new Date(booking.waktuBerakhir).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {booking.jumlahPengguna} participants ·{" "}
+                        {booking.keterangan}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {isBookingModalOpen ? (
           <NewCWSBookingModal
             isOpen={isBookingModalOpen}
             onClose={() => setIsBookingModalOpen(false)}
             onBookingSuccess={handleBookingSuccess}
           />
-        )}
+        ) : null}
       </div>
     </Layout>
   );

@@ -6,7 +6,6 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import NewSerbagunaBookingModal from "@/components/NewSerbagunaBookingModal";
 import SerbagunaBookingCalendar from "@/components/SerbagunaBookingCalendar";
 import {
-  BuildingOffice2Icon,
   PlusIcon,
   UserGroupIcon,
   ClockIcon,
@@ -76,117 +75,115 @@ export default function SerbagunaPage() {
     <ProtectedRoute>
       <Layout>
         <div className="space-y-8">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-                <BuildingOffice2Icon className="h-8 w-8 mr-3 text-primary" />
-                Serbaguna Area
-              </h1>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Book the serbaguna area for various activities and events
-                (2-hour sessions)
-              </p>
+          <section className="card relative overflow-hidden p-6 md:p-8">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-accent/15" />
+            <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2">
+                <div className="pill text-xs text-primary">Serbaguna Area</div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Serbaguna Area
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Book the serbaguna area for various activities and events
+                  (2-hour sessions).
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowBookingModal(true)}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition duration-200 hover:-translate-y-0.5"
+              >
+                <PlusIcon className="h-5 w-5 mr-2" />
+                Book Area
+              </button>
             </div>
 
-            <button
-              onClick={() => setShowBookingModal(true)}
-              className="flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Book Area
-            </button>
+            <div className="relative mt-6 grid gap-4 sm:grid-cols-4">
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <div className="flex items-center gap-3">
+                  <CalendarDaysIcon className="h-6 w-6 text-primary" />
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Total
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {loading ? "..." : totalBookings}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <div className="flex items-center gap-3">
+                  <ClockIcon className="h-6 w-6 text-accent" />
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Active
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {loading ? "..." : activeBookings}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <div className="flex items-center gap-3">
+                  <UserGroupIcon className="h-6 w-6 text-primary" />
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Today
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {loading ? "..." : todayBookings}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+                <div className="flex items-center gap-3">
+                  <MapPinIcon className="h-6 w-6 text-accent" />
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                      Areas
+                    </p>
+                    <p className="text-2xl font-semibold text-foreground">
+                      {loading ? "..." : areas.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div className="card p-6 md:p-8">
+            <SerbagunaBookingCalendar areas={areas} />
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center">
-                <CalendarDaysIcon className="h-8 w-8 text-primary" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Total Bookings
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : totalBookings}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center">
-                <ClockIcon className="h-8 w-8 text-accent" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Active Bookings
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : activeBookings}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center">
-                <UserGroupIcon className="h-8 w-8 text-primary" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Today&apos;s Sessions
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : todayBookings}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center">
-                <MapPinIcon className="h-8 w-8 text-green-500" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Available Areas
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : areas.length}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Serbaguna Calendar */}
-          <SerbagunaBookingCalendar areas={areas} />
-
-          {/* Available Areas */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-              <MapPinIcon className="h-5 w-5 mr-2 text-primary" />
+          <div className="card p-6 md:p-8">
+            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+              <MapPinIcon className="h-5 w-5 text-primary" />
               Available Areas
-            </h3>
+            </div>
             {loading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              <div className="text-center py-6">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+                <p className="mt-2 text-sm text-muted-foreground">
                   Loading areas...
                 </p>
               </div>
             ) : areas.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {areas.map((area) => (
                   <div
                     key={area.id}
-                    className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:border-primary transition-colors"
+                    className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur transition hover:-translate-y-0.5 hover:border-primary"
                   >
-                    <div className="flex items-center">
-                      <MapPinIcon className="h-5 w-5 text-primary mr-3" />
+                    <div className="flex items-center gap-3">
+                      <MapPinIcon className="h-5 w-5 text-primary" />
                       <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">
+                        <h4 className="font-semibold text-foreground">
                           {area.namaArea}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                           Serbaguna Area
                         </p>
                       </div>
@@ -195,22 +192,21 @@ export default function SerbagunaPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600 dark:text-gray-400 text-center py-4">
+              <p className="text-center py-4 text-muted-foreground">
                 No areas available
               </p>
             )}
           </div>
 
-          {/* Recent Bookings */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-              <CalendarDaysIcon className="h-5 w-5 mr-2 text-primary" />
+          <div className="card p-6 md:p-8">
+            <div className="mb-4 flex items-center gap-2 text-lg font-semibold text-foreground">
+              <CalendarDaysIcon className="h-5 w-5 text-primary" />
               Recent Bookings
-            </h3>
+            </div>
             {loading ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              <div className="text-center py-6">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+                <p className="mt-2 text-sm text-muted-foreground">
                   Loading bookings...
                 </p>
               </div>
@@ -219,14 +215,14 @@ export default function SerbagunaPage() {
                 {bookings.slice(0, 5).map((booking) => (
                   <div
                     key={booking.id}
-                    className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg"
+                    className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur transition hover:-translate-y-0.5"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">
+                        <h4 className="font-semibold text-foreground">
                           {booking.penanggungJawab?.namaLengkap || "Unknown"}
                         </h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                           {new Date(booking.waktuMulai).toLocaleDateString(
                             "id-ID",
                             {
@@ -237,7 +233,7 @@ export default function SerbagunaPage() {
                             }
                           )}
                         </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <p className="text-sm text-muted-foreground">
                           {new Date(booking.waktuMulai).toLocaleTimeString(
                             "id-ID",
                             {
@@ -257,35 +253,34 @@ export default function SerbagunaPage() {
                       </div>
                       <div className="text-right">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          className={`pill text-xs ${
                             booking.isDone
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                              ? "bg-success/20 text-success"
+                              : "bg-primary/20 text-primary"
                           }`}
                         >
                           {booking.isDone ? "Completed" : "Active"}
                         </span>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                           {booking.jumlahPengguna} participants
                         </p>
                       </div>
                     </div>
-                    {booking.keterangan && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    {booking.keterangan ? (
+                      <p className="text-sm text-muted-foreground mt-2">
                         {booking.keterangan}
                       </p>
-                    )}
+                    ) : null}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600 dark:text-gray-400 text-center py-4">
+              <p className="text-center py-4 text-muted-foreground">
                 No bookings yet. Be the first to book an area!
               </p>
             )}
           </div>
 
-          {/* Booking Modal */}
           <NewSerbagunaBookingModal
             isOpen={showBookingModal}
             onClose={() => setShowBookingModal(false)}

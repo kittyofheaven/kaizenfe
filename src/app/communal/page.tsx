@@ -124,15 +124,13 @@ export default function CommunalPage() {
   };
 
   const getStatusColor = (booking: CommunalBooking) => {
-    if (booking.isDone)
-      return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+    if (booking.isDone) return "bg-success/20 text-success";
 
     const now = new Date();
     const startTime = new Date(booking.waktuMulai);
 
-    if (startTime < now)
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400";
-    return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+    if (startTime < now) return "bg-warning/20 text-warning";
+    return "bg-primary/20 text-primary";
   };
 
   const getStatusText = (booking: CommunalBooking) => {
@@ -148,55 +146,91 @@ export default function CommunalPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex items-center justify-center h-80">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       </Layout>
     );
   }
 
+  const now = new Date().getTime();
+  const activeCount = bookings.filter(
+    (booking) => !booking.isDone && new Date(booking.waktuBerakhir).getTime() > now
+  ).length;
+  const upcomingCount = bookings.filter(
+    (booking) => new Date(booking.waktuMulai).getTime() > now
+  ).length;
+
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Communal Room Bookings
-          </h1>
-          <button
-            onClick={() => setShowForm(true)}
-            className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            <PlusIcon className="h-4 w-4 mr-2" />
-            New Booking
-          </button>
-        </div>
-
-        {/* Filter */}
-        <div className="flex items-center space-x-4">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Filter by Floor:
-          </label>
-          <select
-            value={selectedFloor}
-            onChange={(e) => setSelectedFloor(e.target.value)}
-            className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="all">All Floors</option>
-            <option value="1">Floor 1</option>
-            <option value="2">Floor 2</option>
-            <option value="3">Floor 3</option>
-          </select>
-        </div>
-
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
+      <div className="space-y-8">
+        <section className="card relative overflow-hidden p-6 md:p-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-accent/15" />
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-3">
+              <div className="pill text-xs text-primary">Communal Room</div>
+              <h1 className="text-3xl font-bold text-foreground">
+                Communal Room Bookings
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Kelola booking ruang komunal dengan cepat, pantau status, dan
+                filter berdasarkan lantai.
+              </p>
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <span className="pill">Slot 1 jam</span>
+                <span className="pill">Urut by waktu mulai</span>
+                <span className="pill">Mulai / edit / hapus langsung</span>
+              </div>
+            </div>
+            <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+              <select
+                value={selectedFloor}
+                onChange={(e) => setSelectedFloor(e.target.value)}
+                className="input min-w-[160px] bg-background/70"
+              >
+                <option value="all">All Floors</option>
+                <option value="1">Floor 1</option>
+                <option value="2">Floor 2</option>
+                <option value="3">Floor 3</option>
+              </select>
+              <button
+                onClick={() => setShowForm(true)}
+                className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition duration-200 hover:-translate-y-0.5"
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
+                New Booking
+              </button>
+            </div>
           </div>
-        )}
+          <div className="relative mt-6 grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+              <p className="text-sm text-muted-foreground">Active</p>
+              <p className="text-2xl font-semibold text-foreground">
+                {activeCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+              <p className="text-sm text-muted-foreground">Upcoming</p>
+              <p className="text-2xl font-semibold text-foreground">
+                {upcomingCount}
+              </p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/70 p-4 backdrop-blur">
+              <p className="text-sm text-muted-foreground">Total</p>
+              <p className="text-2xl font-semibold text-foreground">
+                {bookings.length}
+              </p>
+            </div>
+          </div>
+        </section>
 
-        {/* Bookings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {error ? (
+          <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {bookings.map((booking) => {
             const startDateTime = formatDateTime(booking.waktuMulai);
             const endDateTime = formatDateTime(booking.waktuBerakhir);
@@ -204,115 +238,86 @@ export default function CommunalPage() {
             return (
               <div
                 key={booking.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow"
+                className="card relative overflow-hidden p-6 transition duration-200 hover:-translate-y-1"
               >
-                {/* Status Badge */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/12" />
+                <div className="relative flex items-center justify-between">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                    className={`pill text-xs font-semibold ${getStatusColor(
                       booking
                     )}`}
                   >
                     {getStatusText(booking)}
                   </span>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 text-sm">
                     <button
                       onClick={() => openEditForm(booking)}
-                      className="text-primary hover:text-primary/80"
+                      className="rounded-lg border border-border/80 bg-background/60 px-3 py-1 text-foreground transition hover:border-primary hover:text-primary"
                     >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
+                      Edit
                     </button>
                     <button
                       onClick={() => openDeleteModal(booking)}
-                      className="text-red-600 hover:text-red-800"
+                      className="rounded-lg border border-border/80 bg-background/60 px-3 py-1 text-destructive transition hover:border-destructive hover:text-destructive"
                     >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                      Delete
                     </button>
                   </div>
                 </div>
 
-                {/* Booking Info */}
-                <div className="space-y-3">
-                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    <span className="text-sm">
+                <div className="relative mt-4 space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4 text-primary" />
+                    <span className="text-foreground">
                       {startDateTime.date} • {startDateTime.time} -{" "}
                       {endDateTime.time}
                     </span>
                   </div>
-
-                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                    <MapPinIcon className="h-4 w-4 mr-2" />
-                    <span className="text-sm">Floor {booking.lantai}</span>
+                  <div className="flex items-center gap-2">
+                    <MapPinIcon className="h-4 w-4 text-accent" />
+                    <span className="text-foreground">
+                      Floor {booking.lantai}
+                    </span>
                   </div>
-
-                  <div className="flex items-center text-gray-600 dark:text-gray-300">
-                    <UsersIcon className="h-4 w-4 mr-2" />
-                    <span className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <UsersIcon className="h-4 w-4 text-primary" />
+                    <span className="text-foreground">
                       {booking.jumlahPengguna} people
                     </span>
                   </div>
-
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  <div className="rounded-lg border border-border/70 bg-background/60 p-3">
+                    <p className="text-sm font-semibold text-foreground">
                       {booking.penanggungJawab.namaLengkap}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-muted-foreground">
                       {booking.penanggungJawab.nomorWa}
                     </p>
                   </div>
-
-                  {booking.keterangan && (
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {booking.keterangan}
-                      </p>
+                  {booking.keterangan ? (
+                    <div className="rounded-lg border border-border/70 bg-background/60 p-3 text-foreground">
+                      {booking.keterangan}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             );
           })}
         </div>
 
-        {bookings.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+        {bookings.length === 0 && !loading ? (
+          <div className="card relative overflow-hidden p-8 text-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/6 via-transparent to-accent/12" />
+            <CalendarIcon className="mx-auto h-12 w-12 text-primary" />
+            <h3 className="mt-3 text-lg font-semibold text-foreground">
               No bookings
             </h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
               Get started by creating a new booking.
             </p>
           </div>
-        )}
+        ) : null}
 
-        {/* Booking Form Modal */}
-        {showForm && (
+        {showForm ? (
           <CommunalBookingForm
             booking={editingBooking}
             onSubmit={
@@ -320,10 +325,9 @@ export default function CommunalPage() {
             }
             onClose={closeForm}
           />
-        )}
+        ) : null}
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteModal && deletingBooking && (
+        {showDeleteModal && deletingBooking ? (
           <DeleteConfirmModal
             title="Delete Booking"
             message={`Are you sure you want to delete this booking? This action cannot be undone.`}
@@ -333,7 +337,7 @@ export default function CommunalPage() {
               setDeletingBooking(null);
             }}
           />
-        )}
+        ) : null}
       </div>
     </Layout>
   );
