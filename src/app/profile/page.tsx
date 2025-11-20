@@ -25,8 +25,17 @@ import type {
   WashingMachineBooking,
 } from "@/types/api";
 
+type BookingKind =
+  | "communal"
+  | "cws"
+  | "serbaguna"
+  | "kitchen"
+  | "washingMachineWomen"
+  | "washingMachineMen";
+
 interface BookingHistoryItem {
   id: string;
+  kind: BookingKind;
   facility: string;
   icon: ComponentType<ComponentProps<"svg">>;
   start: string;
@@ -73,6 +82,7 @@ export default function ProfilePage() {
   const [history, setHistory] = useState<BookingHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -107,6 +117,7 @@ export default function ProfilePage() {
           communalRes.data.forEach((booking: CommunalBooking) => {
             items.push({
               id: booking.id,
+              kind: "communal",
               facility: "Communal Room",
               icon: BuildingOfficeIcon,
               start: booking.waktuMulai,
@@ -127,6 +138,7 @@ export default function ProfilePage() {
           cwsRes.data.forEach((booking: CWSBooking) => {
             items.push({
               id: booking.id,
+              kind: "cws",
               facility: "CWS",
               icon: BuildingOffice2Icon,
               start: booking.waktuMulai,
@@ -148,6 +160,7 @@ export default function ProfilePage() {
             .forEach((booking: SerbagunaBooking) => {
               items.push({
                 id: booking.id,
+                kind: "serbaguna",
                 facility: "Serbaguna Area",
                 icon: CubeIcon,
                 start: booking.waktuMulai,
@@ -170,6 +183,7 @@ export default function ProfilePage() {
             .forEach((booking: KitchenBooking) => {
               items.push({
                 id: booking.id,
+                kind: "kitchen",
                 facility: "Kitchen",
                 icon: FireIcon,
                 start: booking.waktuMulai,
@@ -180,31 +194,38 @@ export default function ProfilePage() {
             });
         }
 
-        const washingMachineBookings: WashingMachineBooking[] = [];
         if (washerWomenRes.success && Array.isArray(washerWomenRes.data)) {
-          washingMachineBookings.push(
-            ...washerWomenRes.data.filter(
-              (booking) => booking.idPeminjam === user.id
-            )
-          );
+          washerWomenRes.data
+            .filter((booking: WashingMachineBooking) => booking.idPeminjam === user.id)
+            .forEach((booking: WashingMachineBooking) => {
+              items.push({
+                id: booking.id,
+                kind: "washingMachineWomen",
+                facility: "Washing Machine",
+                icon: Cog6ToothIcon,
+                start: booking.waktuMulai,
+                end: booking.waktuBerakhir,
+                description: booking.fasilitas?.nama,
+                status: determineStatus(booking.waktuMulai, booking.waktuBerakhir),
+              });
+            });
         }
         if (washerMenRes.success && Array.isArray(washerMenRes.data)) {
-          washingMachineBookings.push(
-            ...washerMenRes.data.filter((booking) => booking.idPeminjam === user.id)
-          );
+          washerMenRes.data
+            .filter((booking: WashingMachineBooking) => booking.idPeminjam === user.id)
+            .forEach((booking: WashingMachineBooking) => {
+              items.push({
+                id: booking.id,
+                kind: "washingMachineMen",
+                facility: "Washing Machine",
+                icon: Cog6ToothIcon,
+                start: booking.waktuMulai,
+                end: booking.waktuBerakhir,
+                description: booking.fasilitas?.nama,
+                status: determineStatus(booking.waktuMulai, booking.waktuBerakhir),
+              });
+            });
         }
-
-        washingMachineBookings.forEach((booking) => {
-          items.push({
-            id: booking.id,
-            facility: "Washing Machine",
-            icon: Cog6ToothIcon,
-            start: booking.waktuMulai,
-            end: booking.waktuBerakhir,
-            description: booking.fasilitas?.nama,
-            status: determineStatus(booking.waktuMulai, booking.waktuBerakhir),
-          });
-        });
 
         items.sort(
           (a, b) => new Date(b.start).getTime() - new Date(a.start).getTime()
@@ -260,6 +281,50 @@ export default function ProfilePage() {
     threshold.setDate(threshold.getDate() - 7);
     return history.filter((item) => new Date(item.start) >= threshold).length;
   }, [history]);
+
+  const handleCancelBooking = async (booking: BookingHistoryItem) => {
+    if (booking.status !== "upcoming") return;
+
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this booking?"
+    );
+    if (!confirmCancel) return;
+
+    setCancellingId(booking.id);
+    setError(null);
+
+    try {
+      switch (booking.kind) {
+        case "communal":
+          await apiClient.deleteCommunalBooking(booking.id);
+          break;
+        case "cws":
+          await apiClient.deleteCWSBooking(booking.id);
+          break;
+        case "serbaguna":
+          await apiClient.deleteSerbagunaBooking(booking.id);
+          break;
+        case "kitchen":
+          await apiClient.deleteKitchenBooking(booking.id);
+          break;
+        case "washingMachineWomen":
+          await apiClient.deleteWomenWashingMachineBooking(booking.id);
+          break;
+        case "washingMachineMen":
+          await apiClient.deleteMenWashingMachineBooking(booking.id);
+          break;
+        default:
+          throw new Error("Unsupported booking type");
+      }
+
+      setHistory((prev) => prev.filter((item) => item.id !== booking.id));
+    } catch (err) {
+      console.error("Failed to cancel booking:", err);
+      setError("Failed to cancel booking. Please try again.");
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   if (!user) {
     return null;
@@ -352,17 +417,17 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {upcomingBookings.map((booking) => (
-                <div
-                  key={`upcoming-${booking.id}-${booking.start}`}
-                  className="rounded-lg border border-border bg-secondary/40 p-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <booking.icon className="h-5 w-5 text-primary" />
-                      <div>
-                        <h3 className="text-sm font-semibold text-foreground">
-                          {booking.facility}
+          {upcomingBookings.map((booking) => (
+            <div
+              key={`upcoming-${booking.id}-${booking.start}`}
+              className="rounded-lg border border-border bg-secondary/40 p-4"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-start space-x-3">
+                  <booking.icon className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {booking.facility}
                         </h3>
                         <p className="text-xs text-muted-foreground">
                           {formatRange(booking.start, booking.end)}
@@ -384,15 +449,29 @@ export default function ProfilePage() {
                         )}
                       </div>
                     </div>
-                    <span
-                      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        booking.status === "ongoing"
-                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
-                          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-                      }`}
-                    >
-                      {booking.status === "ongoing" ? "Ongoing" : "Upcoming"}
-                    </span>
+                    <div className="flex flex-col items-end space-y-2">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          booking.status === "ongoing"
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                            : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                        }`}
+                      >
+                        {booking.status === "ongoing" ? "Ongoing" : "Upcoming"}
+                      </span>
+                      {booking.status === "upcoming" && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelBooking(booking)}
+                          disabled={cancellingId === booking.id}
+                          className="text-xs font-medium text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {cancellingId === booking.id
+                            ? "Cancelling..."
+                            : "Cancel booking"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

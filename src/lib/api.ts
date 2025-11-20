@@ -414,6 +414,12 @@ class ApiClient {
     );
   }
 
+  async deleteSerbagunaBooking(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`${API_VERSION}/serbaguna/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   // Kitchen Bookings
   async getKitchenBookings(
     params: PaginationParams = {}
@@ -448,6 +454,12 @@ class ApiClient {
     );
   }
 
+  async deleteKitchenBooking(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`${API_VERSION}/dapur/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   // Women's Washing Machine Bookings
   async getWomenWashingMachineBookings(
     params: PaginationParams = {}
@@ -478,6 +490,17 @@ class ApiClient {
     );
   }
 
+  async deleteWomenWashingMachineBooking(
+    id: string
+  ): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(
+      `${API_VERSION}/mesin-cuci-cewe/${id}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
   // Men's Washing Machine Bookings
   async getMenWashingMachineBookings(
     params: PaginationParams = {}
@@ -505,6 +528,15 @@ class ApiClient {
   > {
     return this.request<ApiResponse<WashingMachineFacility[]>>(
       `${API_VERSION}/mesin-cuci-cowo/facilities`
+    );
+  }
+
+  async deleteMenWashingMachineBooking(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(
+      `${API_VERSION}/mesin-cuci-cowo/${id}`,
+      {
+        method: "DELETE",
+      }
     );
   }
 
