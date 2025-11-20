@@ -46,9 +46,13 @@ export default function LoginPage() {
       } else {
         setError(response.message || "Login failed");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("❌ Login error:", error);
-      setError(error.message || "An error occurred during login");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "An error occurred during login";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -59,7 +63,7 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">KAIZEN</h1>
+          <h1 className="text-4xl font-bold text-primary mb-2">RTB CONNECT</h1>
           <p className="text-muted-foreground">Sign in to your account</p>
         </div>
 
@@ -122,7 +126,7 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <span className="text-primary">Contact your administrator</span>
             </p>
           </div>

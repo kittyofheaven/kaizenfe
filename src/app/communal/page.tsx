@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Layout from "@/components/Layout";
 import { apiClient, ApiError } from "@/lib/api";
 import { CommunalBooking, CreateCommunalBookingRequest } from "@/types/api";
@@ -9,7 +9,6 @@ import {
   CalendarIcon,
   MapPinIcon,
   UsersIcon,
-  ClockIcon,
 } from "@heroicons/react/24/outline";
 import CommunalBookingForm from "@/components/CommunalBookingForm";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
@@ -27,7 +26,7 @@ export default function CommunalPage() {
     useState<CommunalBooking | null>(null);
   const [selectedFloor, setSelectedFloor] = useState<string>("all");
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -53,11 +52,11 @@ export default function CommunalPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedFloor]);
 
   useEffect(() => {
     fetchData();
-  }, [selectedFloor]);
+  }, [fetchData]);
 
   const handleCreateBooking = async (
     bookingData: CreateCommunalBookingRequest

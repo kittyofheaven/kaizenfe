@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import NewSerbagunaBookingModal from "@/components/NewSerbagunaBookingModal";
+import SerbagunaBookingCalendar from "@/components/SerbagunaBookingCalendar";
 import {
   BuildingOffice2Icon,
   PlusIcon,
@@ -32,12 +33,16 @@ export default function SerbagunaPage() {
         apiClient.getSerbagunaAreas(),
       ]);
 
-      if (bookingsResponse.success) {
+      if (bookingsResponse.success && Array.isArray(bookingsResponse.data)) {
         setBookings(bookingsResponse.data);
+      } else {
+        setBookings([]);
       }
 
-      if (areasResponse.success) {
+      if (areasResponse.success && Array.isArray(areasResponse.data)) {
         setAreas(areasResponse.data);
+      } else {
+        setAreas([]);
       }
     } catch (error) {
       console.error("Error fetching serbaguna data:", error);
@@ -128,7 +133,7 @@ export default function SerbagunaPage() {
                 <UserGroupIcon className="h-8 w-8 text-primary" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Today's Sessions
+                    Today&apos;s Sessions
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {loading ? "..." : todayBookings}
@@ -151,6 +156,9 @@ export default function SerbagunaPage() {
               </div>
             </div>
           </div>
+
+          {/* Serbaguna Calendar */}
+          <SerbagunaBookingCalendar areas={areas} />
 
           {/* Available Areas */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border border-gray-200 dark:border-gray-700">

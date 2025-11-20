@@ -16,6 +16,8 @@ import {
   FireIcon,
   Cog6ToothIcon,
   BuildingOffice2Icon,
+  UserCircleIcon,
+  PlayCircleIcon,
 } from "@heroicons/react/24/solid";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,9 +26,11 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: HomeIcon },
   { name: "Communal Room", href: "/communal", icon: BuildingOfficeIcon },
   { name: "CWS", href: "/cws", icon: BuildingOffice2Icon },
+  { name: "Theater", href: "/theater", icon: PlayCircleIcon },
   { name: "Serbaguna Area", href: "/serbaguna", icon: CubeIcon },
   { name: "Kitchen", href: "/kitchen", icon: FireIcon },
   { name: "Washing Machine", href: "/washing-machine", icon: Cog6ToothIcon },
+  { name: "Profile", href: "/profile", icon: UserCircleIcon },
 ];
 
 export default function Navigation() {
@@ -58,7 +62,7 @@ export default function Navigation() {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="flex items-center space-x-3">
                 <div className="text-2xl font-extrabold text-primary tracking-tight">
-                  KAIZEN
+                  RTB CONNECT
                 </div>
               </Link>
             </div>
@@ -111,6 +115,13 @@ export default function Navigation() {
                       </p>
                     </div>
                     <div className="p-1">
+                      <Link
+                        href="/profile"
+                        className="flex items-center w-full px-3 py-2 text-sm text-foreground hover:bg-secondary rounded-md transition-colors"
+                      >
+                        <UserIcon className="h-4 w-4 mr-2" />
+                        Profile
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="flex items-center w-full px-3 py-2 text-sm text-foreground hover:bg-secondary rounded-md transition-colors"

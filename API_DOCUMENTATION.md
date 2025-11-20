@@ -1,6 +1,6 @@
-# 🚀 Kaizen API Documentation - Frontend Developer Guide
+# 🚀 RTB Connect API Documentation - Frontend Developer Guide
 
-> **Comprehensive guide untuk integrasi Kaizen API dengan frontend application**
+> **Comprehensive guide untuk integrasi RTB Connect API dengan frontend application**
 
 ## 📋 Daftar Isi
 
@@ -19,10 +19,12 @@
   - [Kitchen Booking](#kitchen-booking)
   - [Women's Washing Machine Booking](#womens-washing-machine-booking)
   - [Men's Washing Machine Booking](#mens-washing-machine-booking)
+  - [Theater Booking](#theater-1-hour-slots--new)
 - [⏰ Validasi Waktu](#-validasi-waktu)
 - [💡 Contoh Penggunaan](#-contoh-penggunaan)
 - [🔧 Tips untuk Frontend Developer](#-tips-untuk-frontend-developer)
 - [🛠️ Troubleshooting](#️-troubleshooting)
+- [🐳 Docker Setup](#-docker-setup)
 
 ---
 
@@ -157,9 +159,64 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ---
 
+## 🐳 Docker Setup
+
+### 1. Build Image (Arch Linux & other distros)
+
+```bash
+docker build -t rtb-connect-api .
+```
+
+- Gunakan `--platform linux/amd64` bila diperlukan (misal build di Apple Silicon untuk server x86_64 Arch).
+
+### 2. Jalankan Container
+
+```bash
+docker run --rm \
+  -p 3000:3000 \
+  -e DATABASE_URL="mysql://user:password@host:3306/database" \
+  rtb-connect-api
+```
+
+- `DATABASE_URL` wajib diisi agar Prisma dapat terhubung ke database.
+- Tambahkan environment lain (`JWT_SECRET`, `JWT_EXPIRES_IN`, dsb.) dengan `-e` sesuai kebutuhan.
+- Untuk development lokal, koneksikan ke database di host dengan `host.docker.internal` (Docker Desktop) atau `--network host` (pada Arch Linux dengan Docker default).
+
+### 3. Docker Compose (opsional)
+
+Buat file `docker-compose.yml` sederhana jika ingin menyatukan aplikasi dan database:
+
+```yaml
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: mysql://user:password@mysql:3306/database
+      JWT_SECRET: super-secret
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: database
+    ports:
+      - "3306:3306"
+```
+
+Jalankan dengan:
+
+```bash
+docker compose up --build
+```
+
+---
+
 ## 📝 Informasi Umum
 
-**Kaizen API** adalah sistem booking fasilitas yang memungkinkan pengguna untuk melakukan reservasi berbagai fasilitas seperti ruang komunal, area serbaguna, dapur, dan mesin cuci.
+**RTB Connect API** adalah sistem booking fasilitas yang memungkinkan pengguna untuk melakukan reservasi berbagai fasilitas seperti ruang komunal, area serbaguna, dapur, dan mesin cuci.
 
 ### Teknologi Stack
 
@@ -612,6 +669,8 @@ const message = result?.message || "Unknown error";
 GET /api/v1/users?page=2&limit=20&sortBy=namaLengkap&sortOrder=asc
 ```
 
+> ℹ️ Mulai versi ini, field `pagination.total` dan `pagination.totalPages` mencerminkan total data sesungguhnya di database, bukan hanya jumlah item pada halaman aktif.
+
 ---
 
 ## 🔗 Endpoints
@@ -646,7 +705,7 @@ GET /api/v1
 ```json
 {
   "success": true,
-  "message": "Kaizen API v1",
+  "message": "RTB Connect API v1",
   "version": "1.0.0",
   "documentation": "/api/docs",
   "endpoints": {
@@ -1070,6 +1129,8 @@ POST /api/v1/communal
 PUT /api/v1/communal/{id}
 ```
 
+**Catatan:** Perubahan salah satu dari `waktuMulai` atau `waktuBerakhir` tetap melewati validasi slot 1 jam, pengecekan waktu masa depan, dan deteksi bentrok pada lantai terkait.
+
 #### Delete Communal Booking
 
 ```http
@@ -1307,6 +1368,8 @@ const getSerbagunaTimeSlots = async (date, areaId) => {
 - `GET /api/v1/serbaguna/{id}` - Get by ID
 - `GET /api/v1/serbaguna/penanggung-jawab/{penanggungJawabId}` - Get by responsible person
 - `GET /api/v1/serbaguna/time-slots?date=2024-01-15` - Get time slot suggestions
+
+> ℹ️ **Update:** endpoint `PUT /api/v1/serbaguna/{id}` kini memverifikasi durasi 2 jam penuh dan mengecek konflik waktu bahkan saat hanya `waktuMulai` atau `waktuBerakhir` yang berubah.
 
 ---
 
@@ -1634,6 +1697,8 @@ POST /api/v1/cws
 ```http
 PUT /api/v1/cws/{id}
 ```
+
+**Catatan:** Perubahan parsial akan tetap divalidasi—slot wajib 2 jam penuh, waktu tidak boleh lampau, Kamis tetap diblokir, dan konflik jadwal dicek sebelum disimpan.
 
 #### Delete CWS Booking
 
@@ -3092,6 +3157,44 @@ npm run dev
 - `DELETE /api/v1/mesin-cuci-cowo/{id}` - Delete booking
 - `GET /api/v1/mesin-cuci-cowo/facilities` - Get available facilities
 - `GET /api/v1/mesin-cuci-cowo/time-slots?date=YYYY-MM-DD&facilityId=X` - ⭐ Smart time slots
+
+#### **Theater (1-hour slots)** ⭐ **NEW**
+
+- `GET /api/v1/theater` - Get all bookings
+- `POST /api/v1/theater` - Create booking
+- `GET /api/v1/theater/{id}` - Get by ID
+- `PUT /api/v1/theater/{id}` - Update booking
+- `DELETE /api/v1/theater/{id}` - Delete booking
+- `GET /api/v1/theater/penanggung-jawab/{id}` - Get by responsible person
+- `GET /api/v1/theater/time-slots?date=YYYY-MM-DD` - ⭐ Slot availability with status
+- `GET /api/v1/theater/time-suggestions?date=YYYY-MM-DD` - Quick slot suggestions
+
+> Theater follows the same 1-hour validation rules as Communal (06:00-22:00 WIB).
+
+**Sample Create**
+
+```http
+POST /api/v1/theater
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+
+{
+  "idPenanggungJawab": "2",
+  "waktuMulai": "2025-10-15T09:00:00.000Z",
+  "waktuBerakhir": "2025-10-15T10:00:00.000Z",
+  "jumlahPengguna": "20",
+  "keterangan": "Gladi bersih"
+}
+```
+
+**Slot Availability**
+
+```http
+GET /api/v1/theater/time-slots?date=2025-10-15
+Authorization: Bearer <TOKEN>
+```
+
+Response payload contains `display` (WIB format) and `available` flags for each hour.
 
 #### **CWS - Community Work Space (2-hour slots)** ⭐ **NEW**
 

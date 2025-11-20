@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import type { TimeSlot as ApiTimeSlot } from "@/types/api";
 
-interface TimeSlot {
+interface WashingMachineSlot {
   hour: number;
   startTime: string;
   endTime: string;
@@ -15,12 +16,43 @@ interface TimeSlot {
 
 interface Props {
   selectedDate: string;
-  selectedSlot: TimeSlot | null;
-  onSlotSelect: (slot: TimeSlot | null) => void;
+  selectedSlot: WashingMachineSlot | null;
+  onSlotSelect: (slot: WashingMachineSlot | null) => void;
   onDateChange: (newDate: string) => void;
   type: "men" | "women";
-  facilityId: number;
+  facilityId: string;
 }
+
+const toIsoUtc = (date: string, hour: number) => {
+  const [year, month, day] = date.split("-").map(Number);
+  if ([year, month, day].some((value) => Number.isNaN(value))) {
+    const fallback = new Date();
+    fallback.setUTCHours(hour, 0, 0, 0);
+    return fallback.toISOString();
+  }
+  return new Date(Date.UTC(year, month - 1, day, hour, 0, 0)).toISOString();
+};
+
+const generateDefaultTimeSlots = (date: string): WashingMachineSlot[] => {
+  const slots: WashingMachineSlot[] = [];
+
+  for (let hour = 0; hour < 24; hour++) {
+    const endHour = hour + 1;
+    const startHourStr = hour.toString().padStart(2, "0");
+    const endHourStr = endHour.toString().padStart(2, "0");
+
+    slots.push({
+      hour,
+      startTime: `${startHourStr}:00`,
+      endTime: `${endHourStr}:00`,
+      display: `${startHourStr}:00 - ${endHourStr}:00`,
+      value: toIsoUtc(date, hour),
+      endValue: toIsoUtc(date, endHour),
+      available: true,
+    });
+  }
+  return slots;
+};
 
 export default function WashingMachineTimeSlotPicker({
   selectedDate,
@@ -30,111 +62,82 @@ export default function WashingMachineTimeSlotPicker({
   type,
   facilityId,
 }: Props) {
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [timeSlots, setTimeSlots] = useState<WashingMachineSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Fetch time slots from API (for availability check)
-  const fetchTimeSlots = async (date: string) => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("No auth token found, using default time slots");
-        // Use default slots if no token (user not logged in)
-        const defaultSlots = generateDefaultTimeSlots(date);
-        setTimeSlots(defaultSlots);
+  const fetchTimeSlots = useCallback(
+    async (date: string) => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.warn("No auth token found, using default time slots");
+          setTimeSlots(generateDefaultTimeSlots(date));
+          setLoading(false);
+          return;
+        }
+
+        const endpoint =
+          type === "women"
+            ? `/api/v1/mesin-cuci-cewe/time-slots?date=${date}&facilityId=${facilityId}`
+            : `/api/v1/mesin-cuci-cowo/time-slots?date=${date}&facilityId=${facilityId}`;
+
+        const response = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result: { success: boolean; data?: ApiTimeSlot[] } =
+          await response.json();
+
+        if (result.success && Array.isArray(result.data)) {
+          const slots: WashingMachineSlot[] = result.data.map((slot) => {
+            const start = new Date(slot.waktuMulai);
+            const end = new Date(slot.waktuBerakhir);
+            const startHour = start.getHours().toString().padStart(2, "0");
+            const endHour = end.getHours().toString().padStart(2, "0");
+
+            return {
+              hour: start.getHours(),
+              startTime: slot.waktuMulai,
+              endTime: slot.waktuBerakhir,
+              display: slot.display ?? `${startHour}:00 - ${endHour}:00`,
+              value: slot.waktuMulai,
+              endValue: slot.waktuBerakhir,
+              available: slot.available,
+            } satisfies WashingMachineSlot;
+          });
+
+          setTimeSlots(slots);
+        } else {
+          setTimeSlots(generateDefaultTimeSlots(date));
+        }
+      } catch (error: unknown) {
+        console.error("Error fetching time slots:", error);
+        setTimeSlots(generateDefaultTimeSlots(date));
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const endpoint =
-        type === "women"
-          ? `/api/v1/mesin-cuci-cewe/time-slots?date=${date}&facilityId=${facilityId}`
-          : `/api/v1/mesin-cuci-cowo/time-slots?date=${date}&facilityId=${facilityId}`;
-
-      const response = await fetch(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const slots: TimeSlot[] = result.data.map((slot: any) => ({
-          hour: new Date(slot.waktuMulai).getHours(),
-          startTime: slot.waktuMulai,
-          endTime: slot.waktuBerakhir,
-          display:
-            slot.display ||
-            `${new Date(slot.waktuMulai)
-              .getHours()
-              .toString()
-              .padStart(2, "0")}:00 - ${(
-              new Date(slot.waktuMulai).getHours() + 1
-            )
-              .toString()
-              .padStart(2, "0")}:00`,
-          value: slot.waktuMulai,
-          endValue: slot.waktuBerakhir,
-          available: slot.available,
-        }));
-        setTimeSlots(slots);
-      } else {
-        // Fallback: generate default slots if API fails
-        const defaultSlots = generateDefaultTimeSlots(date);
-        setTimeSlots(defaultSlots);
-      }
-    } catch (error) {
-      console.error("Error fetching time slots:", error);
-      // Fallback: generate default slots
-      const defaultSlots = generateDefaultTimeSlots(date);
-      setTimeSlots(defaultSlots);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Generate default time slots (1-hour slots, 24/7)
-  const generateDefaultTimeSlots = (date: string): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
-
-    // Washing machine operates 24/7 with 1-hour slots
-    for (let hour = 0; hour < 24; hour++) {
-      const endHour = hour + 1;
-      const startHourStr = hour.toString().padStart(2, "0");
-      const endHourStr = endHour.toString().padStart(2, "0");
-
-      const startDateTime = new Date(`${date}T${startHourStr}:00:00.000Z`);
-      const endDateTime = new Date(`${date}T${endHourStr}:00:00.000Z`);
-
-      slots.push({
-        hour,
-        startTime: `${startHourStr}:00`,
-        endTime: `${endHourStr}:00`,
-        display: `${startHourStr}:00 - ${endHourStr}:00`,
-        value: startDateTime.toISOString(),
-        endValue: endDateTime.toISOString(),
-        available: true,
-      });
-    }
-    return slots;
-  };
+    },
+    [facilityId, type]
+  );
 
   // Fetch time slots when date changes
   useEffect(() => {
     if (selectedDate) {
       fetchTimeSlots(selectedDate);
     }
-  }, [selectedDate, type, facilityId]);
+  }, [selectedDate, fetchTimeSlots]);
 
   // Check if slot is in the past
-  const isSlotInPast = (slot: TimeSlot) => {
+  const isSlotInPast = (slot: WashingMachineSlot) => {
     const now = new Date();
     const slotTime = new Date(slot.value);
     return slotTime < now;
@@ -207,7 +210,7 @@ export default function WashingMachineTimeSlotPicker({
     onDateChange(today);
   };
 
-  const handleSlotClick = (slot: TimeSlot) => {
+  const handleSlotClick = (slot: WashingMachineSlot) => {
     if (!slot.available || isSlotInPast(slot)) return;
 
     if (selectedSlot?.value === slot.value) {

@@ -31,12 +31,16 @@ export default function KitchenPage() {
         apiClient.getKitchenFacilities(),
       ]);
 
-      if (bookingsResponse.success) {
+      if (bookingsResponse.success && Array.isArray(bookingsResponse.data)) {
         setBookings(bookingsResponse.data);
+      } else {
+        setBookings([]);
       }
 
-      if (facilitiesResponse.success) {
+      if (facilitiesResponse.success && Array.isArray(facilitiesResponse.data)) {
         setFacilities(facilitiesResponse.data);
+      } else {
+        setFacilities([]);
       }
     } catch (error) {
       console.error("Error fetching kitchen data:", error);
@@ -57,7 +61,11 @@ export default function KitchenPage() {
 
   // Calculate stats
   const totalBookings = bookings.length;
-  const activeBookings = bookings.filter((booking) => !booking.isDone).length;
+  const now = Date.now();
+  const activeBookings = bookings.filter((booking) => {
+    const endTime = new Date(booking.waktuBerakhir).getTime();
+    return endTime > now;
+  }).length;
   const todayBookings = bookings.filter((booking) => {
     const today = new Date().toISOString().split("T")[0];
     const bookingDate = new Date(booking.waktuMulai)
@@ -127,7 +135,7 @@ export default function KitchenPage() {
                 <FireIcon className="h-8 w-8 text-orange-500" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Today's Sessions
+                    Today&apos;s Sessions
                   </p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {loading ? "..." : todayBookings}
@@ -207,11 +215,15 @@ export default function KitchenPage() {
               </div>
             ) : bookings.length > 0 ? (
               <div className="space-y-4">
-                {bookings.slice(0, 5).map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg"
-                  >
+                {bookings.slice(0, 5).map((booking) => {
+                  const isCompleted =
+                    new Date(booking.waktuBerakhir).getTime() <= Date.now();
+
+                  return (
+                    <div
+                      key={booking.id}
+                      className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg"
+                    >
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-gray-900 dark:text-white">
@@ -252,12 +264,12 @@ export default function KitchenPage() {
                       <div className="text-right">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            booking.isDone
+                            isCompleted
                               ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                               : "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
                           }`}
                         >
-                          {booking.isDone ? "Completed" : "Active"}
+                          {isCompleted ? "Completed" : "Upcoming"}
                         </span>
                         {booking.pinjamPeralatan && (
                           <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
@@ -267,7 +279,8 @@ export default function KitchenPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-600 dark:text-gray-400 text-center py-4">

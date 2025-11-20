@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MapPinIcon } from "@heroicons/react/24/outline";
 
 interface SerbagunaArea {
@@ -22,7 +22,7 @@ export default function SerbagunaAreaSelector({
   const [error, setError] = useState<string | null>(null);
 
   // Fetch available areas from API
-  const fetchAreas = async () => {
+  const fetchAreas = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -66,7 +66,7 @@ export default function SerbagunaAreaSelector({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Generate default areas (fallback)
   const generateDefaultAreas = (): SerbagunaArea[] => {
@@ -81,7 +81,7 @@ export default function SerbagunaAreaSelector({
   // Fetch areas on component mount
   useEffect(() => {
     fetchAreas();
-  }, []);
+  }, [fetchAreas]);
 
   const handleAreaClick = (area: SerbagunaArea) => {
     if (selectedAreaId === area.id) {
@@ -182,4 +182,3 @@ export default function SerbagunaAreaSelector({
     </div>
   );
 }
-

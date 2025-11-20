@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -11,17 +11,17 @@ import {
 import { CWSBooking } from "@/types/api";
 import { apiClient } from "@/lib/api";
 
+interface CalendarSlot {
+  hour: number;
+  display: string;
+  available: boolean;
+  booking: CWSBooking | null;
+}
+
 interface CWSDayBooking {
   date: string;
   bookings: CWSBooking[];
-  timeSlots: {
-    hour: number;
-    time: string;
-    endTime: string;
-    display: string;
-    available: boolean;
-    booking: CWSBooking | null;
-  }[];
+  timeSlots: CalendarSlot[];
 }
 
 export default function CWSBookingCalendar() {
@@ -30,56 +30,9 @@ export default function CWSBookingCalendar() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Generate CWS time slots from 6:00 to 22:00 (2-hour slots)
-  const generateCWSTimeSlots = (timeSlotData: any[]) => {
-    const slots = [];
-
-    // CWS has 2-hour slots: 06:00-08:00, 08:00-10:00, 10:00-12:00, 12:00-14:00, 14:00-16:00, 16:00-18:00, 18:00-20:00, 20:00-22:00
-    for (let hour = 6; hour < 22; hour += 2) {
-      const timeString = `${hour.toString().padStart(2, "0")}:00`;
-      const endTimeString = `${(hour + 2).toString().padStart(2, "0")}:00`;
-
-      // Find matching time slot from API
-      const apiSlot = timeSlotData.find((slot) => {
-        const slotStart = new Date(slot.waktuMulai);
-        return slotStart.getHours() === hour;
-      });
-
-      slots.push({
-        hour,
-        time: timeString,
-        endTime: endTimeString,
-        display: `${timeString} - ${endTimeString}`,
-        available: apiSlot ? apiSlot.available : true,
-        booking:
-          apiSlot && !apiSlot.available
-            ? {
-                id: "unknown",
-                idPenanggungJawab: "unknown",
-                waktuMulai: apiSlot.waktuMulai,
-                waktuBerakhir: apiSlot.waktuBerakhir,
-                jumlahPengguna: "Unknown",
-                keterangan: "Booked",
-                isDone: false,
-                createdAt: "",
-                updatedAt: "",
-                penanggungJawab: {
-                  id: "unknown",
-                  namaLengkap: "Booked",
-                  namaPanggilan: "Booked",
-                  nomorWa: "",
-                },
-              }
-            : null,
-      });
-    }
-
-    return slots;
-  };
-
   // Generate CWS time slots with actual booking data
   const generateCWSTimeSlotsWithBookings = (bookings: CWSBooking[]) => {
-    const slots = [];
+    const slots: CalendarSlot[] = [];
 
     // CWS has 2-hour slots: 06:00-08:00, 08:00-10:00, 10:00-12:00, 12:00-14:00, 14:00-16:00, 16:00-18:00, 18:00-20:00, 20:00-22:00
     for (let hour = 6; hour < 22; hour += 2) {
@@ -94,18 +47,16 @@ export default function CWSBookingCalendar() {
 
       slots.push({
         hour,
-        time: timeString,
-        endTime: endTimeString,
         display: `${timeString} - ${endTimeString}`,
-        available: !booking, // Available if no booking found
-        booking: booking || null,
+        available: !booking,
+        booking: booking ?? null,
       });
     }
 
     return slots;
   };
 
-  const fetchBookingsForDate = async (date: Date) => {
+  const fetchBookingsForDate = useCallback(async (date: Date) => {
     setLoading(true);
     setError(null);
 
@@ -130,16 +81,18 @@ export default function CWSBookingCalendar() {
         setDayBookings({
           date: dateString,
           bookings: [],
-          timeSlots: generateCWSTimeSlots([]),
+          timeSlots: generateCWSTimeSlotsWithBookings([]),
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching CWS bookings by date:", err);
 
-      // Check if it's an authentication error
-      if (err.message && err.message.includes("Session expired")) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load bookings";
+
+      if (message.includes("Session expired")) {
         setError("Session expired. Please login again.");
-      } else if (err.message && err.message.includes("Invalid access token")) {
+      } else if (message.includes("Invalid access token")) {
         setError("Authentication required. Please login again.");
       } else {
         setError("Failed to load bookings");
@@ -148,16 +101,16 @@ export default function CWSBookingCalendar() {
       setDayBookings({
         date: date.toISOString().split("T")[0],
         bookings: [],
-        timeSlots: generateCWSTimeSlots([]),
+        timeSlots: generateCWSTimeSlotsWithBookings([]),
       });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchBookingsForDate(currentDate);
-  }, [currentDate]);
+  }, [currentDate, fetchBookingsForDate]);
 
   const goToPreviousDay = () => {
     const newDate = new Date(currentDate);
@@ -184,11 +137,8 @@ export default function CWSBookingCalendar() {
     });
   };
 
-  const getSlotStatus = (slot: { available: boolean; booking: any }) => {
-    if (!slot.available) {
-      return "booked";
-    }
-    return "available";
+  const getSlotStatus = (slot: CalendarSlot) => {
+    return slot.available ? "available" : "booked";
   };
 
   const getSlotClasses = (status: string) => {

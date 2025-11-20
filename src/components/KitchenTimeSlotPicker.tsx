@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import type { TimeSlot as ApiTimeSlot } from "@/types/api";
 
-interface TimeSlot {
+interface KitchenSlot {
   hour: number;
   startTime: string;
   endTime: string;
@@ -15,11 +16,43 @@ interface TimeSlot {
 
 interface KitchenTimeSlotPickerProps {
   selectedDate: string;
-  selectedSlot: TimeSlot | null;
-  onSlotSelect: (slot: TimeSlot | null) => void;
+  selectedSlot: KitchenSlot | null;
+  onSlotSelect: (slot: KitchenSlot | null) => void;
   onDateChange: (date: string) => void;
   selectedFacilityId?: string;
 }
+
+const toIsoUtc = (date: string, hour: number) => {
+  const [year, month, day] = date.split("-").map(Number);
+  if ([year, month, day].some((value) => Number.isNaN(value))) {
+    const fallback = new Date();
+    fallback.setUTCHours(hour, 0, 0, 0);
+    return fallback.toISOString();
+  }
+  return new Date(Date.UTC(year, month - 1, day, hour, 0, 0)).toISOString();
+};
+
+const generateDefaultKitchenTimeSlots = (date: string): KitchenSlot[] => {
+  const slots: KitchenSlot[] = [];
+
+  for (let hour = 6; hour < 22; hour++) {
+    const endHour = hour + 1;
+    const startHourStr = hour.toString().padStart(2, "0");
+    const endHourStr = endHour.toString().padStart(2, "0");
+
+    slots.push({
+      hour,
+      startTime: `${startHourStr}:00`,
+      endTime: `${endHourStr}:00`,
+      display: `${startHourStr}:00 - ${endHourStr}:00`,
+      value: toIsoUtc(date, hour),
+      endValue: toIsoUtc(date, endHour),
+      available: true,
+    });
+  }
+
+  return slots;
+};
 
 export default function KitchenTimeSlotPicker({
   selectedDate,
@@ -28,100 +61,71 @@ export default function KitchenTimeSlotPicker({
   onDateChange,
   selectedFacilityId,
 }: KitchenTimeSlotPickerProps) {
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [timeSlots, setTimeSlots] = useState<KitchenSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Fetch time slots from Kitchen API (for availability check)
-  const fetchTimeSlots = async (date: string, facilityId?: string) => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("No auth token found, using default kitchen time slots");
-        // Use default slots if no token (user not logged in)
-        const defaultSlots = generateDefaultKitchenTimeSlots(date);
-        setTimeSlots(defaultSlots);
+  const fetchTimeSlots = useCallback(
+    async (date: string, facilityId?: string) => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.warn("No auth token found, using default kitchen time slots");
+          setTimeSlots(generateDefaultKitchenTimeSlots(date));
+          setLoading(false);
+          return;
+        }
+
+        const endpoint = `/api/v1/dapur/time-slots?date=${date}${
+          facilityId ? `&facilityId=${facilityId}` : ""
+        }`;
+
+        const response = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result: { success: boolean; data?: ApiTimeSlot[] } =
+          await response.json();
+
+        if (result.success && Array.isArray(result.data)) {
+          const slots: KitchenSlot[] = result.data.map((slot) => {
+            const start = new Date(slot.waktuMulai);
+            const end = new Date(slot.waktuBerakhir);
+            const startHour = start.getHours().toString().padStart(2, "0");
+            const endHour = end.getHours().toString().padStart(2, "0");
+
+            return {
+              hour: start.getHours(),
+              startTime: slot.waktuMulai,
+              endTime: slot.waktuBerakhir,
+              display: slot.display ?? `${startHour}:00 - ${endHour}:00`,
+              value: slot.waktuMulai,
+              endValue: slot.waktuBerakhir,
+              available: slot.available,
+            } satisfies KitchenSlot;
+          });
+
+          setTimeSlots(slots);
+        } else {
+          setTimeSlots(generateDefaultKitchenTimeSlots(date));
+        }
+      } catch (error: unknown) {
+        console.error("Error fetching kitchen time slots:", error);
+        setTimeSlots(generateDefaultKitchenTimeSlots(date));
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const endpoint = `/api/v1/dapur/time-slots?date=${date}${
-        facilityId ? `&facilityId=${facilityId}` : ""
-      }`;
-
-      const response = await fetch(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const slots: TimeSlot[] = result.data.map((slot: any) => ({
-          hour: new Date(slot.waktuMulai).getHours(),
-          startTime: slot.waktuMulai,
-          endTime: slot.waktuBerakhir,
-          display:
-            slot.display ||
-            `${new Date(slot.waktuMulai)
-              .getHours()
-              .toString()
-              .padStart(2, "0")}:00 - ${(
-              new Date(slot.waktuMulai).getHours() + 1
-            )
-              .toString()
-              .padStart(2, "0")}:00`,
-          value: slot.waktuMulai,
-          endValue: slot.waktuBerakhir,
-          available: slot.available,
-        }));
-        setTimeSlots(slots);
-      } else {
-        // Fallback: generate default kitchen slots if API fails
-        const defaultSlots = generateDefaultKitchenTimeSlots(date);
-        setTimeSlots(defaultSlots);
-      }
-    } catch (error) {
-      console.error("Error fetching kitchen time slots:", error);
-      // Fallback: generate default kitchen slots
-      const defaultSlots = generateDefaultKitchenTimeSlots(date);
-      setTimeSlots(defaultSlots);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Generate default kitchen time slots (1-hour slots, 06:00-22:00)
-  const generateDefaultKitchenTimeSlots = (date: string): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
-
-    // Kitchen operates 06:00-22:00 with 1-hour slots
-    for (let hour = 6; hour < 22; hour++) {
-      const endHour = hour + 1;
-      const startHourStr = hour.toString().padStart(2, "0");
-      const endHourStr = endHour.toString().padStart(2, "0");
-
-      const startDateTime = new Date(`${date}T${startHourStr}:00:00.000Z`);
-      const endDateTime = new Date(`${date}T${endHourStr}:00:00.000Z`);
-
-      slots.push({
-        hour,
-        startTime: `${startHourStr}:00`,
-        endTime: `${endHourStr}:00`,
-        display: `${startHourStr}:00 - ${endHourStr}:00`,
-        value: startDateTime.toISOString(),
-        endValue: endDateTime.toISOString(),
-        available: true,
-      });
-    }
-    return slots;
-  };
+    },
+    []
+  );
 
   // Date navigation functions
   const goToPreviousDay = () => {
@@ -174,7 +178,7 @@ export default function KitchenTimeSlotPicker({
   };
 
   // Check if slot is in the past
-  const isSlotInPast = (slot: TimeSlot) => {
+  const isSlotInPast = (slot: KitchenSlot) => {
     const now = new Date();
     const slotTime = new Date(slot.value);
     return slotTime < now;
@@ -197,7 +201,7 @@ export default function KitchenTimeSlotPicker({
     });
   };
 
-  const handleSlotClick = (slot: TimeSlot) => {
+  const handleSlotClick = (slot: KitchenSlot) => {
     if (!slot.available || isSlotInPast(slot)) return;
 
     if (selectedSlot?.value === slot.value) {
@@ -212,7 +216,7 @@ export default function KitchenTimeSlotPicker({
     if (selectedDate) {
       fetchTimeSlots(selectedDate, selectedFacilityId);
     }
-  }, [selectedDate, selectedFacilityId]);
+  }, [selectedDate, selectedFacilityId, fetchTimeSlots]);
 
   return (
     <div className="space-y-4">
@@ -340,4 +344,3 @@ export default function KitchenTimeSlotPicker({
     </div>
   );
 }
-

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import type { TimeSlot as ApiTimeSlot } from "@/types/api";
 
-interface TimeSlot {
+interface SerbagunaSlot {
   hour: number;
   startTime: string;
   endTime: string;
@@ -15,11 +16,44 @@ interface TimeSlot {
 
 interface SerbagunaTimeSlotPickerProps {
   selectedDate: string;
-  selectedSlot: TimeSlot | null;
-  onSlotSelect: (slot: TimeSlot | null) => void;
+  selectedSlot: SerbagunaSlot | null;
+  onSlotSelect: (slot: SerbagunaSlot | null) => void;
   onDateChange: (date: string) => void;
   selectedAreaId?: string;
 }
+
+const toIsoUtc = (date: string, hour: number) => {
+  const [year, month, day] = date.split("-").map(Number);
+  if ([year, month, day].some((value) => Number.isNaN(value))) {
+    const fallback = new Date();
+    fallback.setUTCHours(hour, 0, 0, 0);
+    return fallback.toISOString();
+  }
+  return new Date(Date.UTC(year, month - 1, day, hour, 0, 0)).toISOString();
+};
+
+const generateDefaultSerbagunaTimeSlots = (
+  date: string
+): SerbagunaSlot[] => {
+  const slots: SerbagunaSlot[] = [];
+
+  for (let hour = 6; hour < 22; hour += 2) {
+    const endHour = hour + 2;
+    const startHourStr = hour.toString().padStart(2, "0");
+    const endHourStr = endHour.toString().padStart(2, "0");
+
+    slots.push({
+      hour,
+      startTime: `${startHourStr}:00`,
+      endTime: `${endHourStr}:00`,
+      display: `${startHourStr}:00 - ${endHourStr}:00`,
+      value: toIsoUtc(date, hour),
+      endValue: toIsoUtc(date, endHour),
+      available: true,
+    });
+  }
+  return slots;
+};
 
 export default function SerbagunaTimeSlotPicker({
   selectedDate,
@@ -28,100 +62,71 @@ export default function SerbagunaTimeSlotPicker({
   onDateChange,
   selectedAreaId,
 }: SerbagunaTimeSlotPickerProps) {
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [timeSlots, setTimeSlots] = useState<SerbagunaSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Fetch time slots from Serbaguna API (for availability check)
-  const fetchTimeSlots = async (date: string, areaId?: string) => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("No auth token found, using default serbaguna time slots");
-        // Use default slots if no token (user not logged in)
-        const defaultSlots = generateDefaultSerbagunaTimeSlots(date);
-        setTimeSlots(defaultSlots);
+  const fetchTimeSlots = useCallback(
+    async (date: string, areaId?: string) => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.warn("No auth token found, using default serbaguna time slots");
+          setTimeSlots(generateDefaultSerbagunaTimeSlots(date));
+          setLoading(false);
+          return;
+        }
+
+        const endpoint = `/api/v1/serbaguna/time-slots?date=${date}${
+          areaId ? `&areaId=${areaId}` : ""
+        }`;
+
+        const response = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result: { success: boolean; data?: ApiTimeSlot[] } =
+          await response.json();
+
+        if (result.success && Array.isArray(result.data)) {
+          const slots: SerbagunaSlot[] = result.data.map((slot) => {
+            const start = new Date(slot.waktuMulai);
+            const end = new Date(slot.waktuBerakhir);
+            const startHour = start.getHours().toString().padStart(2, "0");
+            const endHour = end.getHours().toString().padStart(2, "0");
+
+            return {
+              hour: start.getHours(),
+              startTime: slot.waktuMulai,
+              endTime: slot.waktuBerakhir,
+              display: slot.display ?? `${startHour}:00 - ${endHour}:00`,
+              value: slot.waktuMulai,
+              endValue: slot.waktuBerakhir,
+              available: slot.available,
+            } satisfies SerbagunaSlot;
+          });
+
+          setTimeSlots(slots);
+        } else {
+          setTimeSlots(generateDefaultSerbagunaTimeSlots(date));
+        }
+      } catch (error: unknown) {
+        console.error("Error fetching serbaguna time slots:", error);
+        setTimeSlots(generateDefaultSerbagunaTimeSlots(date));
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const endpoint = `/api/v1/serbaguna/time-slots?date=${date}${
-        areaId ? `&areaId=${areaId}` : ""
-      }`;
-
-      const response = await fetch(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const slots: TimeSlot[] = result.data.map((slot: any) => ({
-          hour: new Date(slot.waktuMulai).getHours(),
-          startTime: slot.waktuMulai,
-          endTime: slot.waktuBerakhir,
-          display:
-            slot.display ||
-            `${new Date(slot.waktuMulai)
-              .getHours()
-              .toString()
-              .padStart(2, "0")}:00 - ${(
-              new Date(slot.waktuMulai).getHours() + 2
-            )
-              .toString()
-              .padStart(2, "0")}:00`,
-          value: slot.waktuMulai,
-          endValue: slot.waktuBerakhir,
-          available: slot.available,
-        }));
-        setTimeSlots(slots);
-      } else {
-        // Fallback: generate default serbaguna slots if API fails
-        const defaultSlots = generateDefaultSerbagunaTimeSlots(date);
-        setTimeSlots(defaultSlots);
-      }
-    } catch (error) {
-      console.error("Error fetching serbaguna time slots:", error);
-      // Fallback: generate default serbaguna slots
-      const defaultSlots = generateDefaultSerbagunaTimeSlots(date);
-      setTimeSlots(defaultSlots);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Generate default serbaguna time slots (2-hour slots, 06:00-22:00)
-  const generateDefaultSerbagunaTimeSlots = (date: string): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
-
-    // Serbaguna operates 06:00-22:00 with 2-hour slots
-    for (let hour = 6; hour < 22; hour += 2) {
-      const endHour = hour + 2;
-      const startHourStr = hour.toString().padStart(2, "0");
-      const endHourStr = endHour.toString().padStart(2, "0");
-
-      const startDateTime = new Date(`${date}T${startHourStr}:00:00.000Z`);
-      const endDateTime = new Date(`${date}T${endHourStr}:00:00.000Z`);
-
-      slots.push({
-        hour,
-        startTime: `${startHourStr}:00`,
-        endTime: `${endHourStr}:00`,
-        display: `${startHourStr}:00 - ${endHourStr}:00`,
-        value: startDateTime.toISOString(),
-        endValue: endDateTime.toISOString(),
-        available: true,
-      });
-    }
-    return slots;
-  };
+    },
+    []
+  );
 
   // Date navigation functions
   const goToPreviousDay = () => {
@@ -174,7 +179,7 @@ export default function SerbagunaTimeSlotPicker({
   };
 
   // Check if slot is in the past
-  const isSlotInPast = (slot: TimeSlot) => {
+  const isSlotInPast = (slot: SerbagunaSlot) => {
     const now = new Date();
     const slotTime = new Date(slot.value);
     return slotTime < now;
@@ -197,7 +202,7 @@ export default function SerbagunaTimeSlotPicker({
     });
   };
 
-  const handleSlotClick = (slot: TimeSlot) => {
+  const handleSlotClick = (slot: SerbagunaSlot) => {
     if (!slot.available || isSlotInPast(slot)) return;
 
     if (selectedSlot?.value === slot.value) {
@@ -212,7 +217,7 @@ export default function SerbagunaTimeSlotPicker({
     if (selectedDate) {
       fetchTimeSlots(selectedDate, selectedAreaId);
     }
-  }, [selectedDate, selectedAreaId]);
+  }, [selectedDate, selectedAreaId, fetchTimeSlots]);
 
   return (
     <div className="space-y-4">
@@ -345,4 +350,3 @@ export default function SerbagunaTimeSlotPicker({
     </div>
   );
 }
-

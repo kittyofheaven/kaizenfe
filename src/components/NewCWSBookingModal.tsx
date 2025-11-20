@@ -22,6 +22,12 @@ interface NewCWSBookingModalProps {
   onBookingSuccess: () => void;
 }
 
+const isThursday = (dateString: string) => {
+  if (!dateString) return false;
+  const parsed = new Date(`${dateString}T00:00:00`);
+  return !Number.isNaN(parsed.getTime()) && parsed.getDay() === 4;
+};
+
 export default function NewCWSBookingModal({
   isOpen,
   onClose,
@@ -34,6 +40,7 @@ export default function NewCWSBookingModal({
   const [keterangan, setKeterangan] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isThursdaySelected = isThursday(selectedDate);
 
   // Set default date when modal opens
   useEffect(() => {
@@ -53,6 +60,11 @@ export default function NewCWSBookingModal({
 
     if (!selectedSlot || !user) {
       return; // Silent fail
+    }
+
+    if (isThursdaySelected) {
+      setError("CWS bookings are unavailable every Thursday. Please choose another day.");
+      return;
     }
 
     setLoading(true);
@@ -84,9 +96,11 @@ export default function NewCWSBookingModal({
       } else {
         setError(response.message || "Failed to create booking");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error creating CWS booking:", err);
-      setError(err.message || "Failed to create booking");
+      const message =
+        err instanceof Error ? err.message : "Failed to create booking";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -137,6 +151,13 @@ export default function NewCWSBookingModal({
                 {user?.namaLengkap} ({user?.namaPanggilan})
               </p>
             </div>
+
+            {isThursdaySelected && (
+              <div className="p-3 bg-amber-50 border border-amber-200 text-amber-700 rounded-md dark:bg-amber-900/20 dark:border-amber-700 dark:text-amber-200">
+                CWS bookings are closed every Thursday. Please choose another
+                day.
+              </div>
+            )}
 
             {/* Number of Participants */}
             <div>
@@ -200,7 +221,11 @@ export default function NewCWSBookingModal({
               <button
                 type="submit"
                 disabled={
-                  loading || !selectedSlot || !jumlahPengguna || !keterangan
+                  loading ||
+                  !selectedSlot ||
+                  !jumlahPengguna ||
+                  !keterangan ||
+                  isThursdaySelected
                 }
                 className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >

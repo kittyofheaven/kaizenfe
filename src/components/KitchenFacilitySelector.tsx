@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { WrenchScrewdriverIcon } from "@heroicons/react/24/outline";
 
 interface KitchenFacility {
@@ -22,7 +22,7 @@ export default function KitchenFacilitySelector({
   const [error, setError] = useState<string | null>(null);
 
   // Fetch available facilities from API
-  const fetchFacilities = async () => {
+  const fetchFacilities = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -66,7 +66,7 @@ export default function KitchenFacilitySelector({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Generate default facilities (fallback)
   const generateDefaultFacilities = (): KitchenFacility[] => {
@@ -83,7 +83,7 @@ export default function KitchenFacilitySelector({
   // Fetch facilities on component mount
   useEffect(() => {
     fetchFacilities();
-  }, []);
+  }, [fetchFacilities]);
 
   const handleFacilityClick = (facility: KitchenFacility) => {
     if (selectedFacilityId === facility.id) {
@@ -187,4 +187,3 @@ export default function KitchenFacilitySelector({
     </div>
   );
 }
-

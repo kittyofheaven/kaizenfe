@@ -170,6 +170,7 @@ export interface CreateKitchenBookingRequest {
 export interface WashingMachineFacility {
   id: string;
   nama: string;
+  status?: string;
 }
 
 export interface WashingMachineBooking {
@@ -224,6 +225,34 @@ export interface CreateCWSBookingRequest {
   isDone: boolean;
 }
 
+// Theater Booking Types
+export interface TheaterBooking {
+  id: string;
+  idPenanggungJawab: string;
+  waktuMulai: string;
+  waktuBerakhir: string;
+  jumlahPengguna: string;
+  keterangan: string;
+  isDone: boolean;
+  createdAt: string;
+  updatedAt: string;
+  penanggungJawab: {
+    id: string;
+    namaLengkap: string;
+    namaPanggilan: string;
+    nomorWa: string;
+  };
+}
+
+export interface CreateTheaterBookingRequest {
+  idPenanggungJawab: string;
+  waktuMulai: string;
+  waktuBerakhir: string;
+  jumlahPengguna: string;
+  keterangan: string;
+  isDone: boolean;
+}
+
 // Time Slot Types
 export interface TimeSlot {
   waktuMulai: string;
@@ -252,11 +281,13 @@ export interface ApiInfoResponse {
     mesinCuciCewe: string;
     mesinCuciCowo: string;
     dapur: string;
+    theater?: string;
   };
 }
 
 // Query Parameters
 export interface PaginationParams {
+  [key: string]: string | number | boolean | undefined;
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -269,6 +300,7 @@ export interface TimeRangeParams {
 }
 
 export interface TimeSlotParams {
+  [key: string]: string | number | boolean | undefined;
   date: string;
   facilityId?: string;
 }

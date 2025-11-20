@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RTB Connect Facility Booking Frontend
 
-## Getting Started
+RTB Connect is a Next.js application that provides a management dashboard and self-service booking experience for communal rooms, community work spaces (CWS), serbaguna areas, kitchens, and washing machines. It integrates with the RTB Connect REST API (see `API_DOCUMENTATION.md`) to deliver up-to-date availability, smart time-slot selection, and role-aware access.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js 18 or later (Node 20+ recommended)
+- npm (ships with Node) or an alternative such as pnpm/yarn
+- Access to a running RTB Connect API instance (local or remote)
+
+## Environment Configuration
+
+The frontend proxies all API calls through Next.js rewrites. Configure the API base URL via environment variable:
+
+```bash
+# .env.local
+API_BASE_URL=http://localhost:3000
+```
+
+- For local development, point to the backend you run locally (default is `http://localhost:3000`).
+- For staging/production, set this value to the deployed backend URL before running `npm run build`.
+
+## Installation
+
+```bash
+npm install
+```
+
+## Development
+
+Start the development server with hot reload:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) to use the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quality Gates
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Lint the project:
 
-## Learn More
+  ```bash
+  npm run lint
+  ```
 
-To learn more about Next.js, take a look at the following resources:
+- Build (type-checks + production bundle):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+  ```bash
+  npm run build
+  ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Production Start
 
-## Deploy on Vercel
+After a successful build, run the production server:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Features at a Glance
+
+- Authenticated dashboard with facility summaries and quick actions
+- Communal rooms with smart slot picker filtered by floor
+- CWS calendar with daily views and booking context
+- Serbaguna, kitchen, and washing machine flows with availability-aware time-slot selection
+- Responsive navigation, dark/light theme toggle, and mobile-friendly interactions
+
+Refer to `API_DOCUMENTATION.md` for the comprehensive backend contract, including authentication flows, pagination conventions, time-slot endpoints, and error semantics.

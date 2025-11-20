@@ -26,7 +26,7 @@ export default function CWSPage() {
 
       console.log("✅ CWS bookings:", bookingsRes);
 
-      if (bookingsRes.success && bookingsRes.data) {
+      if (bookingsRes.success && Array.isArray(bookingsRes.data)) {
         setBookings(bookingsRes.data);
       } else {
         console.error("❌ Failed to fetch CWS bookings:", bookingsRes);
@@ -159,7 +159,7 @@ export default function CWSPage() {
                   <div className="ml-5 w-0 flex-1">
                     <dl>
                       <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                        Today's Sessions
+                        Today&apos;s Sessions
                       </dt>
                       <dd className="text-lg font-medium text-gray-900 dark:text-white">
                         {todayBookings}

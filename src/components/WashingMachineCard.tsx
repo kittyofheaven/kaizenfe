@@ -21,14 +21,14 @@ export default function WashingMachineCard({
 
   const currentBooking = bookings.find(
     (booking) =>
-      booking.facilityId === facility.id &&
+      booking.idFasilitas === facility.id &&
       new Date(booking.waktuMulai) <= new Date() &&
       new Date(booking.waktuBerakhir) > new Date()
   );
 
   const nextBooking = bookings.find(
     (booking) =>
-      booking.facilityId === facility.id &&
+      booking.idFasilitas === facility.id &&
       new Date(booking.waktuMulai) > new Date()
   );
 

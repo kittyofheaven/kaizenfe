@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -8,7 +8,8 @@ import {
   UserIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
-import { WashingMachineBooking, WashingMachineFacility } from "@/types/api";
+import type { TimeSlot as ApiTimeSlot } from "@/types/api";
+import { WashingMachineFacility } from "@/types/api";
 import { apiClient } from "@/lib/api";
 
 interface BookingCalendarProps {
@@ -16,14 +17,15 @@ interface BookingCalendarProps {
   title: string;
 }
 
+interface CalendarSlot {
+  hour: number;
+  display: string;
+  available: boolean;
+}
+
 interface DayBooking {
   date: string;
-  bookings: WashingMachineBooking[];
-  timeSlots: {
-    hour: number;
-    time: string;
-    booking: WashingMachineBooking | null;
-  }[];
+  timeSlots: CalendarSlot[];
 }
 
 export default function BookingCalendar({ type, title }: BookingCalendarProps) {
@@ -34,17 +36,21 @@ export default function BookingCalendar({ type, title }: BookingCalendarProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const bookedCount = dayBookings
+    ? dayBookings.timeSlots.filter((slot) => !slot.available).length
+    : 0;
+  const availableCount = dayBookings
+    ? dayBookings.timeSlots.filter((slot) => slot.available).length
+    : 0;
+
   // Generate time slots from 0:00 to 23:00 (24 hours)
-  const generateTimeSlots = (timeSlotData: any[]) => {
-    const slots = [];
+  const generateTimeSlots = (timeSlotData: ApiTimeSlot[]): CalendarSlot[] => {
+    const slots: CalendarSlot[] = [];
 
     for (let hour = 0; hour < 24; hour++) {
-      const timeString = `${hour.toString().padStart(2, "0")}:00`;
-      const endTimeString = `${((hour + 1) % 24)
-        .toString()
-        .padStart(2, "0")}:00`;
+      const startHourStr = hour.toString().padStart(2, "0");
+      const endHourStr = ((hour + 1) % 24).toString().padStart(2, "0");
 
-      // Find matching time slot from API
       const apiSlot = timeSlotData.find((slot) => {
         const slotStart = new Date(slot.waktuMulai);
         return slotStart.getHours() === hour;
@@ -52,18 +58,8 @@ export default function BookingCalendar({ type, title }: BookingCalendarProps) {
 
       slots.push({
         hour,
-        time: timeString,
-        endTime: endTimeString,
-        display: `${timeString} - ${endTimeString}`,
-        available: apiSlot ? apiSlot.available : true,
-        booking:
-          apiSlot && !apiSlot.available
-            ? {
-                namaPeminjam: "Booked",
-                namaFasilitas: "Unknown",
-                isDone: false,
-              }
-            : null,
+        display: `${startHourStr}:00 - ${endHourStr}:00`,
+        available: apiSlot ? apiSlot.available !== false : true,
       });
     }
 
@@ -71,94 +67,98 @@ export default function BookingCalendar({ type, title }: BookingCalendarProps) {
   };
 
   // Fetch facilities when component mounts
-  const fetchFacilities = async () => {
+  const fetchFacilities = useCallback(async () => {
     try {
       const response =
         type === "women"
           ? await apiClient.getWomenWashingMachineFacilities()
           : await apiClient.getMenWashingMachineFacilities();
 
-      if (response.success && response.data) {
-        setFacilities(response.data);
-        // Auto-select first facility if none selected
-        if (!selectedFacility && response.data.length > 0) {
-          setSelectedFacility(response.data[0].id);
-        }
+      if (response.success) {
+        const facilityList = Array.isArray(response.data)
+          ? response.data
+          : [];
+
+        setFacilities(facilityList);
+        setSelectedFacility((current) => {
+          if (current && facilityList.some((facility) => facility.id === current)) {
+            return current;
+          }
+          return facilityList.length > 0 ? facilityList[0].id : null;
+        });
+      } else {
+        setFacilities([]);
       }
     } catch (err) {
       console.error("Error fetching facilities:", err);
     }
-  };
+  }, [type]);
 
-  const fetchBookingsForDate = async (date: Date) => {
-    if (!selectedFacility) return;
+  const fetchBookingsForDate = useCallback(
+    async (date: Date) => {
+      if (!selectedFacility) return;
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const dateString = date.toISOString().split("T")[0];
+      try {
+        const dateString = date.toISOString().split("T")[0];
 
-      // Use time-slots endpoint with facilityId parameter
-      const endpoint =
-        type === "women"
-          ? `/api/v1/mesin-cuci-cewe/time-slots?date=${dateString}&facilityId=${selectedFacility}`
-          : `/api/v1/mesin-cuci-cowo/time-slots?date=${dateString}&facilityId=${selectedFacility}`;
+        const endpoint =
+          type === "women"
+            ? `/api/v1/mesin-cuci-cewe/time-slots?date=${dateString}&facilityId=${selectedFacility}`
+            : `/api/v1/mesin-cuci-cowo/time-slots?date=${dateString}&facilityId=${selectedFacility}`;
 
-      const response = await fetch(endpoint, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.status === 401) {
-        setError("Authentication required. Please login again.");
-        return;
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const timeSlots = generateTimeSlots(result.data);
-
-        // Count actual bookings (non-available slots)
-        const actualBookings = result.data.filter((slot) => !slot.available);
-
-        setDayBookings({
-          date: dateString,
-          bookings: actualBookings, // Use filtered bookings for count
-          timeSlots,
+        const response = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
         });
-      } else {
+
+        if (response.status === 401) {
+          setError("Authentication required. Please login again.");
+          return;
+        }
+
+        const result: { success: boolean; data?: ApiTimeSlot[] } =
+          await response.json();
+
+        if (result.success && Array.isArray(result.data)) {
+          const timeSlots = generateTimeSlots(result.data);
+          setDayBookings({
+            date: dateString,
+            timeSlots,
+          });
+        } else {
+          setDayBookings({
+            date: dateString,
+            timeSlots: generateTimeSlots([]),
+          });
+        }
+      } catch (err: unknown) {
+        console.error("Error fetching time slots:", err);
+        setError("Failed to load time slots");
         setDayBookings({
-          date: dateString,
-          bookings: [],
+          date: date.toISOString().split("T")[0],
           timeSlots: generateTimeSlots([]),
         });
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching time slots:", err);
-      setError("Failed to load time slots");
-      setDayBookings({
-        date: date.toISOString().split("T")[0],
-        bookings: [],
-        timeSlots: generateTimeSlots([]),
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [selectedFacility, type]
+  );
 
   useEffect(() => {
     fetchFacilities();
-  }, [type]);
+  }, [fetchFacilities]);
 
   useEffect(() => {
     if (selectedFacility) {
       fetchBookingsForDate(currentDate);
     }
-  }, [currentDate, selectedFacility]);
+  }, [currentDate, fetchBookingsForDate, selectedFacility]);
 
   const goToPreviousDay = () => {
     const newDate = new Date(currentDate);
@@ -199,11 +199,8 @@ export default function BookingCalendar({ type, title }: BookingCalendarProps) {
     });
   };
 
-  const getSlotStatus = (slot: { available: boolean; booking: any }) => {
-    if (!slot.available) {
-      return "booked";
-    }
-    return "available";
+  const getSlotStatus = (slot: CalendarSlot) => {
+    return slot.available ? "available" : "booked";
   };
 
   const getSlotClasses = (status: string) => {
@@ -317,18 +314,15 @@ export default function BookingCalendar({ type, title }: BookingCalendarProps) {
             <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">
-                  Total Bookings:{" "}
+                  Total Booked:{" "}
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {dayBookings.bookings.length}
+                    {bookedCount}
                   </span>
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
                   Available Slots:{" "}
                   <span className="font-medium text-gray-900 dark:text-white">
-                    {
-                      dayBookings.timeSlots.filter((slot) => !slot.booking)
-                        .length
-                    }
+                    {availableCount}
                   </span>
                 </span>
               </div>
@@ -359,12 +353,10 @@ export default function BookingCalendar({ type, title }: BookingCalendarProps) {
                       <div className="space-y-1">
                         <div className="flex items-center text-sm">
                           <UserIcon className="h-4 w-4 mr-2" />
-                          <span className="font-medium">
-                            {slot.booking?.namaPeminjam || "Booked"}
-                          </span>
+                          <span className="font-medium">Reserved</span>
                         </div>
                         <div className="text-xs text-red-600 dark:text-red-400">
-                          {slot.booking?.namaFasilitas || "Unavailable"}
+                          Unavailable
                         </div>
                       </div>
                     ) : (
@@ -391,7 +383,7 @@ export default function BookingCalendar({ type, title }: BookingCalendarProps) {
               </div>
             </div>
 
-            {dayBookings.bookings.length === 0 && (
+            {bookedCount === 0 && (
               <div className="text-center py-8">
                 <CalendarIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">

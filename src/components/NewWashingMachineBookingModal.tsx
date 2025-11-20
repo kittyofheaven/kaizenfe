@@ -86,9 +86,11 @@ export default function NewWashingMachineBookingModal({
       } else {
         setError(response.message || "Failed to create booking");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("❌ Error creating washing machine booking:", err);
-      setError(err.message || "Failed to create booking");
+      const message =
+        err instanceof Error ? err.message : "Failed to create booking";
+      setError(message);
     } finally {
       setLoading(false);
     }

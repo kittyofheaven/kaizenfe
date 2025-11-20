@@ -1,3 +1,5 @@
+import type { User } from "@/types/api";
+
 /**
  * Authentication utilities for handling token expiry and redirects
  */
@@ -45,14 +47,28 @@ export const getAuthToken = (): string | null => {
 /**
  * Get stored user data
  */
-export const getStoredUser = (): any | null => {
+export const getStoredUser = (): User | null => {
   if (typeof window === "undefined") return null;
 
   const userData = localStorage.getItem("user");
   if (!userData) return null;
 
   try {
-    return JSON.parse(userData);
+    const parsed = JSON.parse(userData) as Partial<User> | null;
+
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof parsed.id === "string" &&
+      typeof parsed.namaLengkap === "string" &&
+      typeof parsed.namaPanggilan === "string" &&
+      typeof parsed.nomorWa === "string"
+    ) {
+      return parsed as User;
+    }
+
+    console.warn("Stored user data is missing required fields");
+    return null;
   } catch (error) {
     console.error("Failed to parse stored user data:", error);
     return null;

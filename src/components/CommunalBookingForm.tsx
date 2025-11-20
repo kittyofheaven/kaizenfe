@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { CommunalBooking, CreateCommunalBookingRequest } from "@/types/api";
-import { apiClient } from "@/lib/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import WashingMachineTimeSlotPicker from "./WashingMachineTimeSlotPicker";
+import CommunalTimeSlotPicker, {
+  CommunalTimeSlotOption,
+} from "./CommunalTimeSlotPicker";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface CommunalBookingFormProps {
@@ -29,15 +30,8 @@ export default function CommunalBookingForm({
     isDone: false,
   });
   const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedSlot, setSelectedSlot] = useState<{
-    hour: number;
-    startTime: string;
-    endTime: string;
-    display: string;
-    value: string;
-    endValue: string;
-  } | null>(null);
-  const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
+  const [selectedSlot, setSelectedSlot] =
+    useState<CommunalTimeSlotOption | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,34 +58,6 @@ export default function CommunalBookingForm({
     }
   }, [booking]);
 
-  useEffect(() => {
-    if (selectedDate && formData.lantai) {
-      fetchAvailableSlots();
-    }
-  }, [selectedDate, formData.lantai]);
-
-  const fetchAvailableSlots = async () => {
-    try {
-      const response = await apiClient.getCommunalAvailableSlots(
-        selectedDate,
-        formData.lantai
-      );
-      if (response.success && response.data) {
-        // Extract unavailable slots (where available: false)
-        const unavailable = response.data
-          .filter((slot) => slot.available === false)
-          .map((slot) => {
-            const startDate = new Date(slot.waktuMulai);
-            return startDate.getHours().toString();
-          });
-        setUnavailableSlots(unavailable);
-      }
-    } catch (err) {
-      console.error("Error fetching available slots:", err);
-      setUnavailableSlots([]); // Default to all slots available on error
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -111,8 +77,9 @@ export default function CommunalBookingForm({
       };
 
       await onSubmit(bookingData);
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An error occurred";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -136,12 +103,20 @@ export default function CommunalBookingForm({
         ...prev,
         [name]: value,
       }));
+
+      if (name === "lantai") {
+        setSelectedSlot(null);
+      }
     }
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedDate(e.target.value);
+  const updateSelectedDate = (newDate: string) => {
+    setSelectedDate(newDate);
     setSelectedSlot(null);
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateSelectedDate(e.target.value);
   };
 
   return (
@@ -252,12 +227,12 @@ export default function CommunalBookingForm({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Available Time Slots *
               </label>
-              <WashingMachineTimeSlotPicker
+              <CommunalTimeSlotPicker
                 selectedDate={selectedDate}
                 selectedSlot={selectedSlot}
                 onSlotSelect={setSelectedSlot}
-                onDateChange={setSelectedDate}
-                type="women"
+                onDateChange={updateSelectedDate}
+                floor={formData.lantai}
               />
             </div>
           )}

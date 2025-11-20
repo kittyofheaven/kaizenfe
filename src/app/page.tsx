@@ -11,6 +11,7 @@ import {
   FireIcon,
   Cog6ToothIcon,
   ClockIcon,
+  VideoCameraIcon,
 } from "@heroicons/react/24/outline";
 
 interface DashboardStats {
@@ -34,6 +35,13 @@ const facilityCards = [
     href: "/cws",
     icon: BuildingOffice2Icon,
     color: "bg-accent",
+  },
+  {
+    name: "Theater",
+    description: "Reserve the theater for screenings or events",
+    href: "/theater",
+    icon: VideoCameraIcon,
+    color: "bg-primary",
   },
   {
     name: "Serbaguna Area",
@@ -63,7 +71,7 @@ export default function Home() {
     totalBookings: 0,
     todayBookings: 0,
     availableSlots: 0,
-    activeFacilities: 5, // 5 facility types: Communal, CWS, Serbaguna, Kitchen, Washing Machine
+    activeFacilities: 6, // Communal, CWS, Theater, Serbaguna, Kitchen, Washing Machine
   });
   const [loading, setLoading] = useState(true);
 
@@ -74,12 +82,20 @@ export default function Home() {
 
         // Fetch basic stats
         console.log("🏢 Fetching communal bookings...");
-        const communalResponse = await apiClient.getCommunalBookings();
+        const [communalResponse, theaterResponse] = await Promise.all([
+          apiClient.getCommunalBookings(),
+          apiClient.getTheaterBookings(),
+        ]);
+
         console.log("✅ Communal response:", communalResponse);
+        console.log("🎭 Theater response:", theaterResponse);
+
+        const communalTotal = communalResponse.pagination?.total || 0;
+        const theaterTotal = theaterResponse.pagination?.total || 0;
 
         const newStats = {
-          activeFacilities: 5, // Communal, CWS, Serbaguna, Kitchen, Washing Machine
-          totalBookings: communalResponse.pagination?.total || 0,
+          activeFacilities: 6,
+          totalBookings: communalTotal + theaterTotal,
           todayBookings: 0, // Would need to filter by today
           availableSlots: 16, // Default slots per day
         };
@@ -93,7 +109,7 @@ export default function Home() {
           totalBookings: 0,
           todayBookings: 0,
           availableSlots: 0,
-          activeFacilities: 5,
+          activeFacilities: 6,
         });
       } finally {
         console.log("🏁 Finished loading stats");
@@ -110,11 +126,12 @@ export default function Home() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-foreground mb-4">
-            Welcome to Kaizen
+            Welcome to RTB Connect
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Your comprehensive facility booking system for communal rooms,
-            multipurpose areas, kitchen facilities, and washing machines.
+            theater sessions, collaborative workspaces, multipurpose areas,
+            kitchen facilities, and washing machines.
           </p>
         </div>
 
@@ -159,7 +176,7 @@ export default function Home() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Today's Bookings
+                  Today&apos;s Bookings
                 </p>
                 <p className="text-2xl font-semibold text-foreground">
                   {loading ? "..." : stats.todayBookings}

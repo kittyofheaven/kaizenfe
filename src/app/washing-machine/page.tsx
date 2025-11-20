@@ -49,10 +49,26 @@ export default function WashingMachinePage() {
         console.log("✅ Women facilities:", womenFacilitiesRes);
         console.log("✅ Men facilities:", menFacilitiesRes);
 
-        setWomenBookings(womenBookingsRes.data);
-        setMenBookings(menBookingsRes.data);
-        setWomenFacilities(womenFacilitiesRes.data || []);
-        setMenFacilities(menFacilitiesRes.data || []);
+        setWomenBookings(
+          womenBookingsRes.success && Array.isArray(womenBookingsRes.data)
+            ? womenBookingsRes.data
+            : []
+        );
+        setMenBookings(
+          menBookingsRes.success && Array.isArray(menBookingsRes.data)
+            ? menBookingsRes.data
+            : []
+        );
+        setWomenFacilities(
+          womenFacilitiesRes.success && Array.isArray(womenFacilitiesRes.data)
+            ? womenFacilitiesRes.data
+            : []
+        );
+        setMenFacilities(
+          menFacilitiesRes.success && Array.isArray(menFacilitiesRes.data)
+            ? menFacilitiesRes.data
+            : []
+        );
 
         console.log("🏁 Successfully loaded washing machine data");
       } catch (error) {
@@ -93,10 +109,26 @@ export default function WashingMachinePage() {
         apiClient.getMenWashingMachineFacilities(),
       ]);
 
-      setWomenBookings(womenBookingsRes.data);
-      setMenBookings(menBookingsRes.data);
-      setWomenFacilities(womenFacilitiesRes.data || []);
-      setMenFacilities(menFacilitiesRes.data || []);
+      setWomenBookings(
+        womenBookingsRes.success && Array.isArray(womenBookingsRes.data)
+          ? womenBookingsRes.data
+          : []
+      );
+      setMenBookings(
+        menBookingsRes.success && Array.isArray(menBookingsRes.data)
+          ? menBookingsRes.data
+          : []
+      );
+      setWomenFacilities(
+        womenFacilitiesRes.success && Array.isArray(womenFacilitiesRes.data)
+          ? womenFacilitiesRes.data
+          : []
+      );
+      setMenFacilities(
+        menFacilitiesRes.success && Array.isArray(menFacilitiesRes.data)
+          ? menFacilitiesRes.data
+          : []
+      );
     } catch (error) {
       console.error("❌ Error refreshing data:", error);
     }
@@ -136,7 +168,7 @@ export default function WashingMachinePage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Women's Section
+              Women&apos;s Section
             </button>
             <button
               onClick={() => setActiveTab("men")}
@@ -146,7 +178,7 @@ export default function WashingMachinePage() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              Men's Section
+              Men&apos;s Section
             </button>
           </div>
         </div>
@@ -171,7 +203,7 @@ export default function WashingMachinePage() {
           <BookingCalendar
             type={activeTab}
             title={`${
-              activeTab === "women" ? "Women's" : "Men's"
+              activeTab === "women" ? "Women&apos;s" : "Men&apos;s"
             } Washing Machine`}
           />
         </div>
@@ -187,7 +219,7 @@ export default function WashingMachinePage() {
                 {womenFacilities.length}
               </div>
               <div className="text-sm text-muted-foreground">
-                Women's Machines
+                Women&apos;s Machines
               </div>
             </div>
             <div className="text-center p-4 bg-secondary rounded-lg">
@@ -195,7 +227,7 @@ export default function WashingMachinePage() {
                 {menFacilities.length}
               </div>
               <div className="text-sm text-muted-foreground">
-                Men's Machines
+                Men&apos;s Machines
               </div>
             </div>
             <div className="text-center p-4 bg-secondary rounded-lg">

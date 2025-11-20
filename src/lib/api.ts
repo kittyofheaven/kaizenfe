@@ -17,6 +17,8 @@ import {
   WashingMachineFacility,
   CWSBooking,
   CreateCWSBookingRequest,
+  TheaterBooking,
+  CreateTheaterBookingRequest,
   TimeSlot,
   HealthResponse,
   ApiInfoResponse,
@@ -552,6 +554,70 @@ class ApiClient {
   async getCWSBookingsByDate(date: string): Promise<ApiResponse<CWSBooking[]>> {
     return this.request<ApiResponse<CWSBooking[]>>(
       `${API_VERSION}/cws/date/${date}`
+    );
+  }
+
+  // Theater Bookings
+  async getTheaterBookings(
+    params: PaginationParams = {}
+  ): Promise<PaginatedResponse<TheaterBooking>> {
+    const queryParams = this.buildQueryParams(params);
+    return this.request<PaginatedResponse<TheaterBooking>>(
+      `${API_VERSION}/theater${queryParams}`
+    );
+  }
+
+  async createTheaterBooking(
+    bookingData: CreateTheaterBookingRequest
+  ): Promise<ApiResponse<TheaterBooking>> {
+    return this.request<ApiResponse<TheaterBooking>>(`${API_VERSION}/theater`, {
+      method: "POST",
+      body: JSON.stringify(bookingData),
+    });
+  }
+
+  async updateTheaterBooking(
+    id: string,
+    bookingData: Partial<CreateTheaterBookingRequest>
+  ): Promise<ApiResponse<TheaterBooking>> {
+    return this.request<ApiResponse<TheaterBooking>>(
+      `${API_VERSION}/theater/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(bookingData),
+      }
+    );
+  }
+
+  async deleteTheaterBooking(id: string): Promise<ApiResponse<void>> {
+    return this.request<ApiResponse<void>>(`${API_VERSION}/theater/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getTheaterBookingsByResponsiblePerson(
+    penanggungJawabId: string
+  ): Promise<ApiResponse<TheaterBooking[]>> {
+    return this.request<ApiResponse<TheaterBooking[]>>(
+      `${API_VERSION}/theater/penanggung-jawab/${penanggungJawabId}`
+    );
+  }
+
+  async getTheaterTimeSlots(
+    params: TimeSlotParams
+  ): Promise<ApiResponse<TimeSlot[]>> {
+    const queryParams = this.buildQueryParams(params);
+    return this.request<ApiResponse<TimeSlot[]>>(
+      `${API_VERSION}/theater/time-slots${queryParams}`
+    );
+  }
+
+  async getTheaterTimeSuggestions(
+    params: TimeSlotParams
+  ): Promise<ApiResponse<TimeSlot[]>> {
+    const queryParams = this.buildQueryParams(params);
+    return this.request<ApiResponse<TimeSlot[]>>(
+      `${API_VERSION}/theater/time-suggestions${queryParams}`
     );
   }
 }

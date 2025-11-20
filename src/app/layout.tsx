@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Kaizen - Facility Booking System",
+  title: "RTB Connect - Facility Booking System",
   description:
     "Sistem booking fasilitas untuk ruang komunal, area serbaguna, dapur, dan mesin cuci",
 };
